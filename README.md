@@ -41,7 +41,7 @@ For Browsers you can access the minified UMD version. There are separate version
 Then you can access the global **Wetf** object:
 
 ```js
-const { Packer, Unpacker } = wetf;
+const { Packer, Unpacker } = Wetf;
 ```
 
 ## Usage

@@ -1,6 +1,6 @@
 const { readFileSync, writeFileSync, mkdirSync } = require("fs");
 const uglify = require("uglify-js");
-const packageName = require("../package.json").name;
+const packageName = "Wetf";
 
 const packer = readFileSync("./src/packer.js", "utf-8");
 const unpacker = readFileSync("./src/unpacker.js", "utf-8");
