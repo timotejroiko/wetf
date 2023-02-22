@@ -38,7 +38,7 @@ For Browsers you can access the minified UMD version. There are separate version
 <script src="https://unpkg.com/wetf/umd/unpacker.min.js"></script>
 ```
 
-Then you can access the global **Wetf** object:
+Then you can access the global **wetf** object:
 
 ```js
 const { Packer, Unpacker } = Wetf;
