@@ -1,0 +1,32 @@
+{
+  "name": "wetf",
+  "description": "A highly customizable and stupid fast ETF (External Term Format) encoder/decoder for NodeJS and Browsers.",
+  "author": "Timotej Valentin Rojko",
+  "version": "0.9.2",
+  "main": "./index.js",
+  "types": "./types/index.d.ts",
+  "license": "MIT",
+  "scripts": {
+    "test": "tsc -p ./ & node ./scripts/test.js",
+    "types": "tsc -p ./ --noEmit false --emitDeclarationOnly true",
+    "umd": "node ./scripts/umd.js",
+    "benchmark": "node ./scripts/benchmark.js",
+    "build": "npm run test & npm run umd & npm run types"
+  },
+  "files": [
+    "./index.js",
+    "./src",
+    "./umd"
+  ],
+  "devDependencies": {
+    "@devsnek/earl": "github:devsnek/earl",
+    "@types/node": "^18.13.0",
+    "@typescord/ftee": "^0.9.1",
+    "erlang_js": "^2.0.5",
+    "erlpack": "github:discord/erlpack",
+    "erlpackjs": "^1.0.1",
+    "etf.js": "^1.0.1",
+    "nanobench": "^3.0.0",
+    "uglify-js": "^3.17.4"
+  }
+}
