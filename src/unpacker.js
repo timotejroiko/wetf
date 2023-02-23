@@ -50,7 +50,7 @@ class Unpacker {
 		/** @private */ this._sv = new DataView(this._sd.buffer, this._sd.byteOffset, this._sd.length);
 		/** @private */ this._i = 0;
 
-		/** @private */ this._atoms = new Map(Object.entries(options.atomTable ?? {
+		/** @private */ this._atoms = options.atomTable ?? {
 			true: true,
 			false: false,
 			undefined: undefined,
@@ -60,35 +60,29 @@ class Unpacker {
 			infinity: Infinity,
 			positive_infinity: Infinity,
 			negative_infinity: -Infinity
-		}));
-		
-		try {
-			// attempt to build atom accelerators
-			eval("1+1") // test if eval is allowed before proceeding;
-			const encoder = new TextEncoder();
-			const temp = Object.entries([...this._atoms.entries()].reduce((a, kv) => {
-				const l = kv[0].length;
-				if(!a[l]) {
-					a[l] = [];
-				}
-				a[l].push(kv);
-				return a;
-			}, /** @type {Record<string, [key: String, val: any][]>} */ ({})));
-	
-			/** @private */ this._resolveLatinAtom = Function("l", `const d=this._d;const i=this._i;switch(l){${temp.reduce((a, kkv) => a + `case ${kkv[0]}:{${kkv[1].map(x => `if(${x[0].split("").map((z, n) => `d[i+${n}]===${z.charCodeAt(0)}`).join("&&")}){this._i+=l;return ${x[1]}}`).join("\n")};break}`, "")}}return this._latin(l)`.replace(/\s+/g, " "));
-	
-			/** @private */ this._resolveUtfAtom = Function("l", `const d=this._d;const i=this._i;switch(l) {${temp.reduce((a, kkv) => a + `case ${kkv[0]}:{${kkv[1].map(x => `if(${[...encoder.encode(x[0])].map((z, n) => `d[i+${n}]===${z}`).join("&&")}){this._i+=l;return ${x[1]}}`).join("\n")};break}`, "")}}return this._utf(l)`.replace(/\s+/g, " "));
-		} catch(e) {
-			// eval is disabled, build slower alternatives
-			/** @private */ this._resolveLatinAtom = function(/** @type {number} */ l) {
-				const atom = this._latin(l);
-				return this._atoms.has(atom) ? this._atoms.get(atom): atom;
+		};
+
+		const encoder = new TextEncoder();
+		this._atomTableLatin = Object.entries(this._atoms).reduce((a,o) => {
+			const [key, val] = o;
+			let t = a[key.length] ??= [];
+			for(let i = 0; i < key.length; i++) {
+				const char = key.charCodeAt(i);
+				t = t[char] ??= i === key.length - 1 ? val : [];
 			}
-			/** @private */ this._resolveUtfAtom = function(/** @type {number} */ l) {
-				const atom = this._utf(l);
-				return this._atoms.has(atom) ? this._atoms.get(atom): atom;
+			return a;
+		}, /** @type {any[]} */ ([]));
+
+		this._atomTableUtf = Object.entries(this._atoms).reduce((a,o) => {
+			const [key, val] = o;
+			const codes = encoder.encode(key);
+			let t = a[codes.length] ??= [];
+			for(let i = 0; i < codes.length; i++) {
+				const char = codes[i];
+				t = t[char] ??= i === codes.length - 1 ? val : [];
 			}
-		}
+			return a;
+		}, /** @type {any[]} */ ([]));
 	}
 
 	/**
@@ -153,7 +147,7 @@ class Unpacker {
 			}
 			case 100: case 115: case 118: case 119: { // atom
 				const length = type === 100 || type === 118 ? (this._d[this._i++] << 8) + this._d[this._i++] : this._d[this._i++];
-				return type < 118 ? this._resolveLatinAtom(length) : this._resolveUtfAtom(length);
+				return this._resolveAtom(length, type < 118);
 			}
 			case 108: { // list
 				const length = this._v.getUint32(this._i);
@@ -290,6 +284,34 @@ class Unpacker {
 			}
 		}
 		throw new Error(`Missing etf type: ${type}`);
+	}
+
+	/**
+	 * 
+	 * @param {number} length 
+	 * @param {boolean} utf 
+	 * @returns 
+	 */
+	_resolveAtom(length, utf) {
+		const r = utf ? this._atomTableUtf : this._atomTableLatin;
+		if(length in r) {
+			let t = r[length];
+			let i = this._i;
+			for(let n = 0; n < length; n++) {
+				const v = this._d[i++];
+				if(v in t) {
+					if(n === length - 1) {
+						this._i += length;
+						return t[v];
+					} else {
+						t = t[v];
+					}
+				} else {
+					break;
+				}
+			}
+		}
+		return utf ? this._utf(length) : this._latin(length);
 	}
 
 	/**
