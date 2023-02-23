@@ -28,10 +28,11 @@ declare class Unpacker {
     private _sv;
     private _i;
     private _atoms;
-    private _resolveLatinAtom;
-    private _resolveUtfAtom;
+    private _atomTableLatin;
+    private _atomTableUtf;
     unpack(data: Buffer | Uint8Array): any;
     private _loop;
+    private _resolveAtom;
     private _utf;
     private _latin;
     private _decompressorStreamOut;

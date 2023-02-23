@@ -63,7 +63,7 @@ class Unpacker {
 		};
 
 		const encoder = new TextEncoder();
-		this._atomTableLatin = Object.entries(this._atoms).reduce((a,o) => {
+		/** @private */ this._atomTableLatin = Object.entries(this._atoms).reduce((a,o) => {
 			const [key, val] = o;
 			let t = a[key.length] ??= [];
 			for(let i = 0; i < key.length; i++) {
@@ -73,7 +73,7 @@ class Unpacker {
 			return a;
 		}, /** @type {any[]} */ ([]));
 
-		this._atomTableUtf = Object.entries(this._atoms).reduce((a,o) => {
+		/** @private */ this._atomTableUtf = Object.entries(this._atoms).reduce((a,o) => {
 			const [key, val] = o;
 			const codes = encoder.encode(key);
 			let t = a[codes.length] ??= [];
@@ -287,7 +287,7 @@ class Unpacker {
 	}
 
 	/**
-	 * 
+	 * @private
 	 * @param {number} length 
 	 * @param {boolean} utf 
 	 * @returns 
