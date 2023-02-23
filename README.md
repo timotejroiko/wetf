@@ -77,10 +77,10 @@ All options are optional.
 
 | option | type | default | description |
 |---|---|---|---|
-| poolSize | number | 1048576 | Initial size of the internal memory buffer |
+| poolSize | number | 1048576 | Initial size of the internal memory buffer in bytes |
 | useLegacyAtoms | boolean | false | If enabled, Atoms will be encoded using the legacy `ATOM_EXT` formats instead of the newer `ATOM_UTF8_EXT`. Legacy atoms are slightly faster but are limited to the latin1 character set |
-| encoding | [Encoding Options](#encoding-options) | {} | Customize encoding behavior |
 | compression | [Compression Method](#compression-method) | false | Enable data compression and specify the compression method |
+| encoding | [Encoding Options](#encoding-options) | {} | Customize encoding behavior |
 
 ### Compression Method
 
@@ -189,15 +189,15 @@ A table of atoms and the JavaScript values they represent. The default atom tabl
 
 ```js
 {
-    true: true,
-    false: false,
-    undefined: undefined,
-    null: null,
-    nil: null,
-    nan: NaN,
-    infinity: Infinity,
-    positive_infinity: Infinity,
-    negative_infinity: -Infinity
+    "true": true,
+    "false": false,
+    "undefined": undefined,
+    "null": null,
+    "nil": null,
+    "nan": NaN,
+    "infinity": Infinity,
+    "positive_infinity": Infinity,
+    "negative_infinity": -Infinity
 }
 ```
 
