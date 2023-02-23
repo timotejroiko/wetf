@@ -3,7 +3,7 @@ class Packer {
 	 * 
 	 * @param {{
 	 *      poolSize?: number;
-	 *      compression?: "zlib" | "compressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>);
+	 *      compression?: boolean | "zlib" | "compressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>);
 	 *      encoding?: {
 	 *          string?: "binary" | "string";
 	 *          key?: "binary" | "string" | "atom";
@@ -43,15 +43,45 @@ class Packer {
 			/** @private */ this._b = Buffer.from(this._u.buffer);
 			/** @private */ this._e = (/** @type {string} */ string, /** @type {number} */ index) => (/** @type {Buffer} */ (this._b)).write(string, index);
 			/** @private */ this._T = 32; // buffer.write is super fast
+			if(this._compressor === true) { this._compressor = "zlib"; }
 		} else {
 			const encoder = new TextEncoder();
 			/** @private */ this._e = (/** @type {string} */ string, /** @type {number} */ index) => encoder.encodeInto(string, this._u.subarray(index)).written ?? 0;
 			/** @private */ this._b = null;
 			/** @private */ this._T = 32;
+			if(this._compressor === true) { this._compressor = "compressionstream"; }
 			if(typeof navigator === "object") {
 				const agent = navigator.userAgent;
 				if(agent.includes("Firefox")) { this._T = 128; } // firefox is slower at manual encoding
 				else if(agent.includes("Chrome")) { this._T = 540; } // manual encoding is super fast in chrome
+			}
+		}
+
+		if(this._compressor) {
+			if(this._compressor === "zlib") {
+				const zlib = require("zlib");
+				this._z = (/** @type {Uint8Array} */ raw) => {
+					const comp = zlib.deflateSync(raw);
+					return this._compressorOut(comp);
+				}
+			} else if(this._compressor === "compressionstream") {
+				this._z = (/** @type {Uint8Array} */ raw) => {
+					//@ts-expect-error missing from webstreams types?
+					const compression = new CompressionStream("deflate");
+					const reader = compression.readable.getReader();
+					const writer = compression.writable.getWriter();
+					writer.ready.then(() => writer.write(raw)).then(() => writer.ready).then(() => writer.close());
+					return this._compressorStreamOut(reader);
+				}
+			} else if(typeof this._compressor === "function") {
+				const fn = this._compressor;
+				this._z = (/** @type {Uint8Array} */ raw) => {
+					let comp = fn(raw);
+					if(comp instanceof Promise) {
+						return comp.then(this._compressorOut);
+					}
+					return this._compressorOut(comp);
+				}
 			}
 		}
 	}
@@ -64,30 +94,10 @@ class Packer {
 	pack(data) {
 		this._o = this._i;
 		this._expand(10);
-		if(this._compressor) {
+		if(this._z) {
 			this._loop(data);
 			const raw = this._u.subarray(this._o, this._i);
-			if(this._compressor === "zlib") {
-				const zlib = require("zlib");
-				const comp = zlib.deflateSync(raw);
-				return this._compressorOut(comp);
-			} else if(this._compressor === "compressionstream") {
-				this._loop(data);
-				//@ts-expect-error missing from webstreams types?
-				const compression = new CompressionStream("deflate");
-				const reader = compression.readable.getReader();
-				const writer = compression.writable.getWriter();
-				writer.ready.then(() => writer.write(raw)).then(() => writer.ready).then(() => writer.close())
-				return this._compressorStreamOut(reader);
-			} else if(typeof this._compressor === "function") {
-				this._loop(data);
-				const raw = this._u.subarray(this._o, this._i);
-				let comp = this._compressor(raw);
-				if(comp instanceof Promise) {
-					return comp.then(this._compressorOut);
-				}
-				return this._compressorOut(comp);
-			}
+			return this._z(raw);
 		}
 		this._u[this._i++] = 131;
 		this._loop(data);
