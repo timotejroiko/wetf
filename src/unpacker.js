@@ -34,9 +34,9 @@ class Unpacker {
 		} else {
 			const utfDecoder = new TextDecoder("utf8");
 			const latinDecoder = new TextDecoder("latin1");
-			/** @private */ this._u = utfDecoder.decode.bind(utfDecoder);
-			/** @private */ this._l = latinDecoder.decode.bind(latinDecoder);
-			/** @private */ this._T = 32;
+			this._u = utfDecoder.decode.bind(utfDecoder);
+			this._l = latinDecoder.decode.bind(latinDecoder);
+			this._T = 32;
 			if(typeof navigator === "object") {
 				const agent = navigator.userAgent;
 				if(agent.includes("Firefox")) { this._T = 4; } // for some reason firefox is stupid slow at manual decoding

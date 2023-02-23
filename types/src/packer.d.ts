@@ -2,7 +2,7 @@ export = Packer;
 declare class Packer {
     constructor(options?: {
         poolSize?: number | undefined;
-        compression?: "zlib" | "compressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>) | undefined;
+        compression?: boolean | "zlib" | "compressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>) | undefined;
         encoding?: {
             string?: "string" | "binary" | undefined;
             key?: "string" | "binary" | "atom" | undefined;
@@ -37,6 +37,7 @@ declare class Packer {
     private _b;
     private _e;
     private _T;
+    private _z;
     pack(data: any): Uint8Array | Promise<Uint8Array>;
     private _loop;
     private _expand;

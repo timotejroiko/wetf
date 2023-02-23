@@ -46,9 +46,9 @@ class Packer {
 			if(this._compressor === true) { this._compressor = "zlib"; }
 		} else {
 			const encoder = new TextEncoder();
-			/** @private */ this._e = (/** @type {string} */ string, /** @type {number} */ index) => encoder.encodeInto(string, this._u.subarray(index)).written ?? 0;
-			/** @private */ this._b = null;
-			/** @private */ this._T = 32;
+			this._e = (/** @type {string} */ string, /** @type {number} */ index) => encoder.encodeInto(string, this._u.subarray(index)).written ?? 0;
+			this._b = null;
+			this._T = 32;
 			if(this._compressor === true) { this._compressor = "compressionstream"; }
 			if(typeof navigator === "object") {
 				const agent = navigator.userAgent;
@@ -60,7 +60,7 @@ class Packer {
 		if(this._compressor) {
 			if(this._compressor === "zlib") {
 				const zlib = require("zlib");
-				this._z = (/** @type {Uint8Array} */ raw) => {
+				/** @private */ this._z = (/** @type {Uint8Array} */ raw) => {
 					const comp = zlib.deflateSync(raw);
 					return this._compressorOut(comp);
 				}
