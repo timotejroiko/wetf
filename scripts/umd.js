@@ -22,7 +22,7 @@ const packerUMD = code.replace("%", `exports.Packer = ${packerSliced}`);
 const unpackerUMD = code.replace("%", `exports.Unpacker = ${unpackerSliced}`);
 const allUMD = code.replace("%", `exports.Packer = ${packerSliced}; exports.Unpacker = ${unpackerSliced}`);
 
-mkdirSync("./umd", { recursive: true })
+mkdirSync("./umd", { recursive: true });
 writeFileSync("./umd/packer.min.js", uglify.minify(packerUMD).code);
 writeFileSync("./umd/unpacker.min.js", uglify.minify(unpackerUMD).code);
 writeFileSync(`./umd/${packageName.toLowerCase()}.min.js`, uglify.minify(allUMD).code);

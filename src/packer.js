@@ -41,7 +41,8 @@ class Packer {
 
 		if(typeof process !== "undefined" && typeof process?.versions?.node === "string") {
 			/** @private */ this._b = Buffer.from(this._u.buffer);
-			/** @private */ this._e = (/** @type {string} */ string, /** @type {number} */ index) => (/** @type {Buffer} */ (this._b)).write(string, index);
+			// @ts-expect-error this._b will never be null here
+			/** @private */ this._e = (/** @type {string} */ string, /** @type {number} */ index) => this._b.write(string, index);
 			/** @private */ this._T = 32; // buffer.write is super fast
 			if(this._compressor === true) { this._compressor = "zlib"; }
 		} else {
@@ -63,16 +64,17 @@ class Packer {
 				/** @private */ this._z = (/** @type {Uint8Array} */ raw) => {
 					const comp = zlib.deflateSync(raw);
 					return this._compressorOut(comp);
-				}
+				};
 			} else if(this._compressor === "compressionstream") {
 				this._z = (/** @type {Uint8Array} */ raw) => {
-					//@ts-expect-error missing from webstreams types?
+					// @ts-expect-error missing from webstreams types?
+					// eslint-disable-next-line no-undef
 					const compression = new CompressionStream("deflate");
 					const reader = compression.readable.getReader();
 					const writer = compression.writable.getWriter();
 					writer.ready.then(() => writer.write(raw)).then(() => writer.ready).then(() => writer.close());
 					return this._compressorStreamOut(reader);
-				}
+				};
 			} else if(typeof this._compressor === "function") {
 				const fn = this._compressor;
 				this._z = (/** @type {Uint8Array} */ raw) => {
@@ -81,7 +83,7 @@ class Packer {
 						return comp.then(this._compressorOut);
 					}
 					return this._compressorOut(comp);
-				}
+				};
 			}
 		}
 	}
@@ -113,7 +115,7 @@ class Packer {
 		switch(type) {
 			case "undefined": {
 				if(this._undefinedEncoding === 2) { break; }
-				this._expand(11)
+				this._expand(11);
 				this._u[this._i] = this._useLegacyAtoms ? 115 : 119;
 				this._u[this._i + 1] = 9;
 				this._u[this._i + 2] = 117;
@@ -312,10 +314,12 @@ class Packer {
 						// room for optimization but not worth it because numbers this big are rarely used
 						let n = abs;
 						const a = [];
+						// eslint-disable-next-line no-constant-condition
 						while(true) {
 							let k = n & 115792089237316195423570985008687907853269984665640564039457584007913129639935n;
 							let k1 = k >> 128n;
 							let k2 = k & 340282366920938463463374607431768211455n;
+							// eslint-disable-next-line no-cond-assign
 							if(n >>= 256n) {
 								a.push(k2 & 18446744073709551615n, k2 >> 64n, k1 & 18446744073709551615n, k1 >> 64n);
 							} else {
@@ -503,7 +507,7 @@ class Packer {
 				break;
 			}
 		}
-	};
+	}
 
 	/**
 	 * @private
@@ -592,6 +596,7 @@ class Packer {
 	async _compressorStreamOut(reader) {
 		const chunks = [];
 		let size = 0;
+		// eslint-disable-next-line no-constant-condition
 		while(true) {
 			const { done, value } = await reader.read();
 			if(value) {

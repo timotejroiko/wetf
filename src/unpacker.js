@@ -24,7 +24,7 @@ class Unpacker {
 		/** @private */ this._bigintDecoding = ["bigint", "string"].indexOf(options.decoding?.bigint?.toLowerCase() ?? "") + 1 || 1;
 
 		if(typeof process !== "undefined" && typeof process?.versions?.node === "string") {
-			const { StringDecoder } = require('node:string_decoder');
+			const { StringDecoder } = require("node:string_decoder");
 			const utfDecoder = new StringDecoder("utf8");
 			const latinDecoder = new StringDecoder("latin1");
 			/** @private */ this._u = utfDecoder.write.bind(utfDecoder);
@@ -63,7 +63,7 @@ class Unpacker {
 		};
 
 		const encoder = new TextEncoder();
-		/** @private */ this._atomTableLatin = Object.entries(this._atoms).reduce((a,o) => {
+		/** @private */ this._atomTableLatin = Object.entries(this._atoms).reduce((/** @type {any[]} */ a, o) => {
 			const [key, val] = o;
 			let t = a[key.length] ??= [];
 			for(let i = 0; i < key.length; i++) {
@@ -71,9 +71,9 @@ class Unpacker {
 				t = t[char] ??= i === key.length - 1 ? val : [];
 			}
 			return a;
-		}, /** @type {any[]} */ ([]));
+		}, []);
 
-		/** @private */ this._atomTableUtf = Object.entries(this._atoms).reduce((a,o) => {
+		/** @private */ this._atomTableUtf = Object.entries(this._atoms).reduce((/** @type {any[]} */ a, o) => {
 			const [key, val] = o;
 			const codes = encoder.encode(key);
 			let t = a[codes.length] ??= [];
@@ -82,7 +82,7 @@ class Unpacker {
 				t = t[char] ??= i === codes.length - 1 ? val : [];
 			}
 			return a;
-		}, /** @type {any[]} */ ([]));
+		}, []);
 	}
 
 	/**
@@ -100,7 +100,8 @@ class Unpacker {
 				const decomp = zlib.inflateSync(raw);
 				return this.unpack(decomp);
 			} else if(this._decompressor === "decompressionstream") {
-				//@ts-expect-error missing from webstreams types?
+				// @ts-expect-error missing from webstreams types?
+				// eslint-disable-next-line no-undef
 				const decompression = new DecompressionStream("deflate");
 				const reader = decompression.readable.getReader();
 				const writer = decompression.writable.getWriter();
@@ -370,6 +371,7 @@ class Unpacker {
 	async _decompressorStreamOut(reader) {
 		const chunks = [];
 		let size = 0;
+		// eslint-disable-next-line no-constant-condition
 		while(true) {
 			const { done, value } = await reader.read();
 			if(value) {
