@@ -26,7 +26,8 @@
   "files": [
     "./index.js",
     "./src",
-    "./umd"
+    "./umd",
+    "./types"
   ],
   "devDependencies": {
     "@devsnek/earl": "github:devsnek/earl",
