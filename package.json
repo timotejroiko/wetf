@@ -7,7 +7,7 @@
     "erlang"
   ],
   "author": "Timotej Valentin Rojko",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "main": "./index.js",
   "types": "./types/index.d.ts",
   "license": "MIT",
