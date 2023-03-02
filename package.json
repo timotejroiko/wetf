@@ -12,6 +12,7 @@
     "types": "tsc -p ./ --noEmit false --emitDeclarationOnly true",
     "umd": "node ./scripts/umd.js",
     "benchmark": "node ./scripts/benchmark.js",
+    "benchmark2": "node ./scripts/benchmark2.js",
     "build": "npm run test & npm run umd & npm run types"
   },
   "files": [
