@@ -8,7 +8,7 @@ ETF has very loose definitions and rules for how data should be encoded between 
 
 In addition, **Wetf** is fast, [stupid fast](#benchmark), it was designed for absolute performance and tries to squeeze every inch of juice out of the JS engine.
 
-**Wetf** is pronounced "wet fork" or "wet-the-fuck" and stands for "Wetf Es Truly Fast" (or "Wet Extra Terrestrial Format" if you prefer).
+**Wetf** is pronounced "wet-the-fuck" and stands for "Wetf Es Truly Fast" (or "Wet Extra Terrestrial Format" if you prefer).
 
 ## Installation
 
@@ -243,3 +243,9 @@ const obj = {
 | [@devsnek/earl](https://github.com/devsnek/earl) | 19.83s (50428 op/s) | 7.09s (140847 op/s) |
 | [@typescord/ftee](https://github.com/typescord/ftee) | 8.94s (111856 op/s) | 9.31s (107411 op/s) |
 | [wetf](https://github.com/timotejroiko/wetf) | 1.48s (675675 op/s) | 1.51s (662251 op/s) |
+
+Feel free to run the benchmarks yourself with `npm run benchmark`.
+
+## License
+
+**Wetf** is licensed under MIT for simplicity and ease of access to other developers, however if you're an individual or a company using this library in commercial products or services, consider subscribing to the appropriate sponsorship level for your business [here](https://github.com/sponsors/timotejroiko) and get priority support for this library.
