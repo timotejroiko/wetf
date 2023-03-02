@@ -1,34 +1,34 @@
 {
   "name": "wetf",
+  "version": "0.9.7",
   "description": "A highly customizable and stupid fast ETF (External Term Format) encoder/decoder for NodeJS and Browsers.",
   "keywords": [
     "etf",
     "erlpack",
     "erlang"
   ],
+  "homepage": "https://github.com/timotejroiko/wetf",
+  "bugs": "https://github.com/timotejroiko/wetf/issues",
+  "repository": "github:timotejroiko/wetf",
+  "funding": "https://github.com/timotejroiko/wetf?sponsor=1",
+  "license": "MIT",
   "author": "Timotej Valentin Rojko",
-  "version": "0.9.7",
   "main": "./index.js",
   "types": "./types/index.d.ts",
-  "license": "MIT",
-  "homepage": "https://github.com/timotejroiko/wetf",
-  "repository": "github:timotejroiko/wetf",
-  "bugs": "https://github.com/timotejroiko/wetf/issues",
-  "funding": "https://github.com/timotejroiko/wetf?sponsor=1",
-  "scripts": {
-    "test": "tsc -p ./ & node ./scripts/test.js",
-    "types": "tsc -p ./ --noEmit false --emitDeclarationOnly true",
-    "umd": "node ./scripts/umd.js",
-    "benchmark": "node ./scripts/benchmark.js",
-    "benchmark2": "node ./scripts/benchmark2.js",
-    "build": "npm run test & npm run umd & npm run types"
-  },
   "files": [
     "./index.js",
     "./src",
     "./umd",
     "./types"
   ],
+  "scripts": {
+    "benchmark": "node ./scripts/benchmark.js",
+    "benchmark2": "node ./scripts/benchmark2.js",
+    "build": "npm run test & npm run umd & npm run types",
+    "test": "tsc -p ./ & node ./scripts/test.js",
+    "types": "tsc -p ./ --noEmit false --emitDeclarationOnly true",
+    "umd": "node ./scripts/umd.js"
+  },
   "devDependencies": {
     "@devsnek/earl": "github:devsnek/earl",
     "@types/node": "^18.14.4",
