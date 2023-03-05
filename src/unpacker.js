@@ -12,6 +12,7 @@ class Unpacker {
 	 * 			bigint?: "bigint" | "string";
 	 * 		};
 	 * 		atomTable?: Record<string, any>;
+	 * 		atomRegistration?: boolean
 	 * }} options 
 	 */
 	constructor(options = {}) {
@@ -22,6 +23,7 @@ class Unpacker {
 		/** @private */ this._bitbinaryDecoding = ["utf8", "latin1", "buffer", "uint8array", "array"].indexOf(options.decoding?.bitbinary?.toLowerCase() ?? "") + 1 || 4;
 		/** @private */ this._safebigintDecoding = ["number", "bigint", "string"].indexOf(options.decoding?.safebigint?.toLowerCase() ?? "") + 1 || 2;
 		/** @private */ this._bigintDecoding = ["bigint", "string"].indexOf(options.decoding?.bigint?.toLowerCase() ?? "") + 1 || 1;
+		/** @private */ this._atomRegistration = Boolean(options.atomRegistration ?? true);
 
 		if(typeof process !== "undefined" && typeof process?.versions?.node === "string") {
 			const { StringDecoder } = require("node:string_decoder");
@@ -312,7 +314,37 @@ class Unpacker {
 				}
 			}
 		}
+		if(this._atomRegistration) {
+			return this._registerAtom(length, utf);
+		}
 		return utf ? this._utf(length) : this._latin(length);
+	}
+
+	/**
+	 * 
+	 * @param {number} length 
+	 * @param {boolean} utf 
+	 * @returns {string}
+	 */
+	_registerAtom(length, utf) {
+		const r = utf ? this._atomTableUtf : this._atomTableLatin;
+		if(!(length in r)) {
+			r[length] = [];
+		}
+		let t = r[length];
+		let i = this._i;
+		for(let n = 0; n < length; n++) {
+			const v = this._d[i++];
+			if(v in t) {
+				t = t[v];
+			} else if(n === length - 1) {
+				t = t[v] = utf ? this._utf(length) : this._latin(length);
+			} else {
+				t = t[v] = [];
+			}
+		}
+		this._atoms[t] = t;
+		return t;
 	}
 
 	/**

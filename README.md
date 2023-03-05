@@ -157,6 +157,7 @@ All options are optional.
 | decompression | [Decompression Method](#decompression-method) | - | Specify the decompression method |
 | decoding | [Decoding Options](#decoding-options) | {} | Customize decoding behavior |
 | atomTable | object | [Default Atom Table](#default-atom-table) | Defines a table of atoms and the fixed values they represent. When an atom is decoded, it will be replaced by the corresponding value, or converted to a string if no value is found |
+| atomRegistration | boolean | true | Whether to enable adding newly encountered atoms to the atom table. This option slightly increases memory usage and makes first-time atoms slightly slower to decode but subsequent decodings of the same atom will become much faster (enabled by default) |
 
 ### Decompression Method
 
@@ -204,6 +205,8 @@ A table of atoms and the JavaScript values they represent. The default atom tabl
 If a custom atom table is defined, it replaces the entire default table. To simply add an atom to the default table, copy it first and then add your atoms.  
 This table also works as an accelerator as Atoms in the table are faster to decode. Atoms not in the table will be decoded as strings.
 
+If `atomRegistration` is enabled, newly encountered atoms will automatically be added to the table as strings, making them faster to decode the next time they appear.
+
 ### Unpacker Limitations
 
 The Unpacker currently cannot unpack the following ETF types:
@@ -242,10 +245,10 @@ const obj = {
 | [erlang_js](https://github.com/okeuday/erlang_js) | 88.85s (11254 op/s) | 49.08s (20374 op/s) |
 | [@devsnek/earl](https://github.com/devsnek/earl) | 19.83s (50428 op/s) | 7.09s (140847 op/s) |
 | [@typescord/ftee](https://github.com/typescord/ftee) | 8.94s (111856 op/s) | 9.31s (107411 op/s) |
-| [wetf](https://github.com/timotejroiko/wetf) | 1.48s (675675 op/s) | 1.51s (662251 op/s) |
+| [wetf](https://github.com/timotejroiko/wetf) | 1.48s (675675 op/s) | 1.28s (781250 op/s) |
 
 Feel free to run the benchmarks yourself with `npm run benchmark`.
 
 ## License
 
-**Wetf** is licensed under MIT for simplicity and ease of access to other developers, however if you're an individual or a company using this library in commercial products or services, consider subscribing to the appropriate sponsorship level for your business [here](https://github.com/sponsors/timotejroiko) and get priority support for this library.
+**Wetf** is licensed under MIT for simplicity and ease of access to other developers, however, if you're an individual or a company using this library in commercial products and/or services, consider subscribing to the appropriate sponsorship level [here](https://github.com/sponsors/timotejroiko) and get priority support for your business.
