@@ -321,7 +321,7 @@ class Unpacker {
 	}
 
 	/**
-	 * 
+	 * @private
 	 * @param {number} length 
 	 * @param {boolean} utf 
 	 * @returns {string}

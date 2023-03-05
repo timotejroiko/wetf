@@ -11,6 +11,7 @@ declare class Unpacker {
             bigint?: "string" | "bigint" | undefined;
         } | undefined;
         atomTable?: Record<string, any> | undefined;
+        atomRegistration?: boolean | undefined;
     });
     private _decompressor;
     private _nilDecoding;
@@ -19,6 +20,7 @@ declare class Unpacker {
     private _bitbinaryDecoding;
     private _safebigintDecoding;
     private _bigintDecoding;
+    private _atomRegistration;
     private _u;
     private _l;
     private _T;
@@ -33,6 +35,7 @@ declare class Unpacker {
     unpack(data: Buffer | Uint8Array): any;
     private _loop;
     private _resolveAtom;
+    private _registerAtom;
     private _utf;
     private _latin;
     private _decompressorStreamOut;
