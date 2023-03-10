@@ -1,6 +1,6 @@
 {
   "name": "wetf",
-  "version": "0.9.9",
+  "version": "0.9.10",
   "description": "A highly customizable and stupid fast ETF (External Term Format) encoder/decoder for NodeJS and Browsers.",
   "keywords": [
     "etf",

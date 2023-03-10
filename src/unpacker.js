@@ -287,7 +287,7 @@ class Unpacker {
 			}
 		}
 		console.log(this._d.slice(this._i - 20, this._i + 20));
-		throw new Error(`Missing etf type: ${type}`);
+		throw new Error(`Unexpected byte: ${type}`);
 	}
 
 	/**
