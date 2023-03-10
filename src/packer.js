@@ -139,7 +139,10 @@ class Packer {
 				}
 				break;
 			}
-			case "string": {
+			case "string": case "symbol": {
+				if(type === "symbol") {
+					obj = obj.toString();
+				}
 				if(this._stringEncoding === 2) {
 					this._expand(obj.length * 2 + 5);
 					this._u[this._i++] = 109;

@@ -119,9 +119,15 @@ The Packer currently cannot create the following ETF types:
 
 And does not support encoding the following JS objects:
 
-`Map`, `Set`, `Date`, `Symbol`, `Error`, `ArrayBuffer`, `Function`, `RegExp`
+`Map`, `Set`, `Date`, `Error`, `ArrayBuffer`, `DataView`, `Function`, `RegExp`
 
 Methods to create and support some of these types and objects might be added in the future, feel free to open a feature request issue.
+
+The following JS objects may have special rules and behavior:
+
+Symbols are stringified to `Symbol(description)` and encoded using the same rules as strings.
+
+ArrayBuffer and DataView are not directly supported, but Buffer and TypedArrays are.
 
 ## Unpacker
 
