@@ -186,13 +186,16 @@ class Packer {
 								const upper = Math.floor(abs / 4294967296);
 								this._v.setUint32(this._i + 3, lower, true);
 								if(upper < 256) {
+									this._u[this._i + 1] = 5;
 									this._u[this._i + 7] = upper;
 									this._i += 8;
 								} else if(upper < 65536) {
+									this._u[this._i + 1] = 6;
 									this._u[this._i + 7] = upper & 255;
 									this._u[this._i + 8] = upper >> 8;
 									this._i += 9;
 								} else {
+									this._u[this._i + 1] = 7;
 									this._u[this._i + 7] = upper & 255;
 									this._u[this._i + 8] = (upper >> 8) & 255;
 									this._u[this._i + 9] = upper >> 16;
