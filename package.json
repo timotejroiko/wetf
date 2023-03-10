@@ -1,6 +1,6 @@
 {
   "name": "wetf",
-  "version": "0.9.10",
+  "version": "0.9.11",
   "description": "A highly customizable and stupid fast ETF (External Term Format) encoder/decoder for NodeJS and Browsers.",
   "keywords": [
     "etf",
@@ -27,8 +27,7 @@
     "build": "npm run test && npm run umd && npm run types",
     "test": "eslint && tsc -p ./ && node ./scripts/test.js",
     "types": "tsc -p ./ --noEmit false --emitDeclarationOnly true",
-    "umd": "node ./scripts/umd.js",
-    "publish": "npm run build && npm publish"
+    "umd": "node ./scripts/umd.js"
   },
   "devDependencies": {
     "@devsnek/earl": "github:devsnek/earl",
