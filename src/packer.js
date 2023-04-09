@@ -31,7 +31,7 @@ class Packer {
 		/** @private */ this._undefinedEncoding = ["atom", "ignore"].indexOf(options.encoding?.undefined?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._infinityEncoding = ["atom", "ignore"].indexOf(options.encoding?.infinity?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._nanEncoding = ["atom", "ignore"].indexOf(options.encoding?.nan?.toLowerCase() ?? "") + 1 || 1;
-		/** @private */ this._arrayEncoding = ["list", "improperlist", "tuple"].indexOf(options.encoding?.array?.toLowerCase() ?? "") + 1 || 1;
+		/** @private */ this._arrayEncoding = ["list", "improperlist", "tuple"].indexOf(options.encoding?.array?.toLowerCase() ?? "") + 1 || 3;
 		/** @private */ this._useLegacyAtoms = Boolean(options.useLegacyAtoms);
 		/** @private */ this._poolSize = Number(options.poolSize) || 1024 * 1024;
 		/** @private */ this._u = new Uint8Array(this._poolSize);
