@@ -152,17 +152,24 @@ class Unpacker {
 				const length = type === 100 || type === 118 ? (this._d[this._i++] << 8) + this._d[this._i++] : this._d[this._i++];
 				return this._resolveAtom(length, type < 118);
 			}
-			case 108: { // list
-				const length = this._v.getUint32(this._i);
-				this._i += 4;
+			case 104: case 105: case 108: { // tuple / large tuple / list
+				let length;
+				if(type === 104) {
+					length = this._d[this._i++];
+				} else {
+					length = this._v.getUint32(this._i);
+					this._i += 4;
+				}
 				const array = Array(length);
 				for(let i = 0; i < length; i++) {
 					array[i] = this._loop();
 				}
-				if(this._d[this._i] === 106) { // proper list
-					this._i++;
-				} else { // improper list
-					array.push(this._loop());
+				if(type === 108) {
+					if(this._d[this._i] === 106) { // proper list
+						this._i++;
+					} else { // improper list
+						array.push(this._loop());
+					}
 				}
 				return array;
 			}
