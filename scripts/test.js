@@ -33,8 +33,15 @@ for (let i = 0; i < 100000; i++) {
 }
 
 for (let i = 0; i < 100000; i++) {
-	// @ts-ignore
-	const unpacked = unpacker.unpack(c[i]);
+	let unpacked;
+	try {
+		// @ts-ignore
+		unpacked = unpacker.unpack(c[i]);
+	} catch(e) {
+		console.log(e, a[i], b[i], c[i], d[i], e[i]);
+		process.exit(1);
+	}
+	
 	d.push(unpacked);
 	e.push(JSON.stringify(unpacked, (k, v) => typeof v === "bigint" ? v.toString() : v));
 }

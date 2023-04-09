@@ -2,7 +2,7 @@
 // also, some of these libs outright break when trying to encode/decode certain types so the bechmark is limited to types that work on all of them
 
 const bench = require("nanobench");
-const N = 1000000;
+const N = 100000;
 
 const a = [];
 const c = [];
@@ -29,6 +29,26 @@ for (let i = 0; i < N; i++) {
 
 console.log("begin benchmark");
 console.log("iterations = " + N);
+
+bench("wetf pack", function (b) {
+	const { Packer } = require("../index");
+	const packer = new Packer();
+	b.start();
+	for (let i = 0; i < N; i++) {
+		c[i] = packer.pack(a[i]);
+	}
+	b.end();
+});
+
+bench("wetf unpack", function (b) {
+	const { Unpacker } = require("../index");
+	const unpacker = new Unpacker();
+	b.start();
+	for (let i = 0; i < N; i++) {
+		unpacker.unpack(c[i]);
+	}
+	b.end();
+});
 
 bench("erlpack pack", function (b) {
 	const { pack } = require("erlpack");
@@ -145,26 +165,6 @@ bench("@typescord/ftee unpack", function (b) {
 	b.start();
 	for (let i = 0; i < N; i++) {
 		decode(c[i]);
-	}
-	b.end();
-});
-
-bench("wetf pack", function (b) {
-	const { Packer } = require("../index");
-	const packer = new Packer();
-	b.start();
-	for (let i = 0; i < N; i++) {
-		c[i] = packer.pack(a[i]);
-	}
-	b.end();
-});
-
-bench("wetf unpack", function (b) {
-	const { Unpacker } = require("../index");
-	const unpacker = new Unpacker();
-	b.start();
-	for (let i = 0; i < N; i++) {
-		unpacker.unpack(c[i]);
 	}
 	b.end();
 });

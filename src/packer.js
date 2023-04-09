@@ -553,7 +553,7 @@ class Packer {
 	}
 
 	/**
-	 * 
+	 * @private
 	 * @param {*} val 
 	 * @returns 
 	 */

@@ -10,9 +10,9 @@ declare class Packer {
             safeBigInt?: "number" | "bigint" | undefined;
             null?: "atom" | "nil" | undefined;
             buffer?: "string" | "binary" | "bitbinary" | undefined;
-            undefined?: "atom" | "ignore" | undefined;
-            infinity?: "atom" | "ignore" | undefined;
-            nan?: "atom" | "ignore" | undefined;
+            undefined?: "atom" | "null" | "ignore" | undefined;
+            infinity?: "atom" | "null" | "ignore" | undefined;
+            nan?: "atom" | "null" | "ignore" | undefined;
             array?: "list" | "improperlist" | "tuple" | undefined;
         } | undefined;
         useLegacyAtoms?: boolean | undefined;
@@ -34,12 +34,14 @@ declare class Packer {
     private _v;
     private _i;
     private _o;
+    private _r;
     private _b;
     private _e;
     private _T;
     private _z;
     pack(data: any): Uint8Array | Promise<Uint8Array>;
     private _loop;
+    private _notIgnoreOrNull;
     private _expand;
     private _utf;
     private _compressorOut;

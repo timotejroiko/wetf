@@ -19,6 +19,29 @@ const obj = {
 console.log("begin benchmark");
 console.log("iterations = " + N);
 
+bench("wetf pack", function (b) {
+	const { Packer } = require("../index");
+	const packer = new Packer();
+	b.start();
+	for (var i = 0; i < N; i++) {
+		packer.pack(obj);
+	}
+	b.end();
+});
+
+bench("wetf unpack", function (b) {
+	const { Packer, Unpacker } = require("../index");
+	const packer = new Packer();
+	const unpacker = new Unpacker();
+	const packed = packer.pack(obj);
+	b.start();
+	for (var i = 0; i < N; i++) {
+		// @ts-expect-error 
+		unpacker.unpack(packed);
+	}
+	b.end();
+});
+
 bench("erlpack pack", function (b) {
 	const { pack } = require("erlpack");
 	b.start();
@@ -106,7 +129,7 @@ bench("@devsnek/earl pack", function (b) {
 	b.end();
 });
 
-bench("@devsnek/earl pack", function (b) {
+bench("@devsnek/earl unpack", function (b) {
 	const { pack, unpack } = require("@devsnek/earl");
 	const packed = pack(obj);
 	b.start();
@@ -131,29 +154,6 @@ bench("@typescord/ftee unpack", function (b) {
 	b.start();
 	for (var i = 0; i < N; i++) {
 		decode(packed);
-	}
-	b.end();
-});
-
-bench("wetf pack", function (b) {
-	const { Packer } = require("../index");
-	const packer = new Packer();
-	b.start();
-	for (var i = 0; i < N; i++) {
-		packer.pack(obj);
-	}
-	b.end();
-});
-
-bench("wetf unpack", function (b) {
-	const { Packer, Unpacker } = require("../index");
-	const packer = new Packer();
-	const unpacker = new Unpacker();
-	const packed = packer.pack(obj);
-	b.start();
-	for (var i = 0; i < N; i++) {
-		// @ts-expect-error 
-		unpacker.unpack(packed);
 	}
 	b.end();
 });
