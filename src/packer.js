@@ -11,9 +11,9 @@ class Packer {
 	 *          safeBigInt?: "number" | "bigint";
 	 *          null?: "atom" | "nil";
 	 *          buffer?: "binary" | "bitbinary" | "string";
-	 *          undefined?: "atom" | "ignore";
-	 *          infinity?: "atom" | "ignore";
-	 *          nan?: "atom" | "ignore";
+	 *          undefined?: "atom" | "null" | "ignore";
+	 *          infinity?: "atom" | "null" | "ignore";
+	 *          nan?: "atom" | "null" | "ignore";
 	 *          array?: "list" | "improperlist" | "tuple";
 	 *      };
 	 *      useLegacyAtoms?: boolean;
@@ -28,9 +28,9 @@ class Packer {
 		/** @private */ this._safeBigIntEncoding = ["number", "bigint"].indexOf(options.encoding?.safeBigInt?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._nullEncoding = ["atom", "nil"].indexOf(options.encoding?.null?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._bufferEncoding = ["binary", "bitbinary", "string"].indexOf(options.encoding?.buffer?.toLowerCase() ?? "") + 1 || 1;
-		/** @private */ this._undefinedEncoding = ["atom", "ignore"].indexOf(options.encoding?.undefined?.toLowerCase() ?? "") + 1 || 1;
-		/** @private */ this._infinityEncoding = ["atom", "ignore"].indexOf(options.encoding?.infinity?.toLowerCase() ?? "") + 1 || 1;
-		/** @private */ this._nanEncoding = ["atom", "ignore"].indexOf(options.encoding?.nan?.toLowerCase() ?? "") + 1 || 1;
+		/** @private */ this._undefinedEncoding = ["atom", "null", "ignore"].indexOf(options.encoding?.undefined?.toLowerCase() ?? "") + 1 || 1;
+		/** @private */ this._infinityEncoding = ["atom", "null", "ignore"].indexOf(options.encoding?.infinity?.toLowerCase() ?? "") + 1 || 1;
+		/** @private */ this._nanEncoding = ["atom", "null", "ignore"].indexOf(options.encoding?.nan?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._arrayEncoding = ["list", "improperlist", "tuple"].indexOf(options.encoding?.array?.toLowerCase() ?? "") + 1 || 3;
 		/** @private */ this._useLegacyAtoms = Boolean(options.useLegacyAtoms);
 		/** @private */ this._poolSize = Number(options.poolSize) || 1024 * 1024;
@@ -38,6 +38,7 @@ class Packer {
 		/** @private */ this._v = new DataView(this._u.buffer);
 		/** @private */ this._i = 0;
 		/** @private */ this._o = 0;
+		/** @private */ this._r = 0;
 
 		if(typeof process !== "undefined" && typeof process?.versions?.node === "string") {
 			/** @private */ this._b = Buffer.from(this._u.buffer);
@@ -95,6 +96,7 @@ class Packer {
 	 */
 	pack(data) {
 		this._o = this._i;
+		this._r = 0;
 		this._expand(10);
 		if(this._z) {
 			this._loop(data);
@@ -114,7 +116,7 @@ class Packer {
 		const type = typeof obj;
 		switch(type) {
 			case "undefined": {
-				if(this._undefinedEncoding === 2) { break; }
+				if(this._undefinedEncoding === 3) { break; }
 				this._expand(11);
 				this._u[this._i] = this._useLegacyAtoms ? 115 : 119;
 				this._u[this._i + 1] = 9;
@@ -213,16 +215,16 @@ class Packer {
 						this._i += 8;
 					}
 				} else if(Number.isNaN(obj)) {
+					if(this._nanEncoding === 3) { break; }
 					this._expand(4);
-					if(this._nanEncoding === 2) { break; }
 					this._u[this._i] = this._useLegacyAtoms ? 115 : 119;
 					this._u[this._i + 1] = 110;
 					this._u[this._i + 2] = 97;
 					this._u[this._i + 3] = 110;
 					this._i += 4;
 				} else {
+					if(this._infinityEncoding === 3) { break; }
 					this._expand(18);
-					if(this._infinityEncoding === 2) { break; }
 					this._u[this._i] = this._useLegacyAtoms ? 115 : 119;
 					if(obj < 0) {
 						this._v.setUint32(this._i + 1, 1852139361);
@@ -388,25 +390,49 @@ class Packer {
 							this._u[this._i++] = 106;
 						}
 					} else {
+						let size = obj.length;
+						let index = this._i + 1;
+						let type = 1;
+						const r = this._r;
 						if(this._arrayEncoding === 3) {
 							if(obj.length < 256) {
-								this._u[this._i++] = 104;
-								this._u[this._i++] = obj.length;
+								this._u[this._i] = 104;
+								this._i += 2;
 							} else {
 								this._u[this._i] = 105;
-								this._v.setUint32(this._i + 1, obj.length);
 								this._i += 5;
+								type = 2;
 							}
 						} else {
 							this._u[this._i] = 108;
-							this._v.setUint32(this._i + 1, obj.length - (this._arrayEncoding === 2 ? 1 : 0));
 							this._i += 5;
+							if(this._arrayEncoding === 2) {
+								size--;
+								type = 3;
+							} else {
+								type = 4;
+							}
 						}
-						for(const item of obj) {
-							this._loop(item);
+						for(let i = 0; i < obj.length; i++) {
+							let val = obj[i];
+							const checkVal = this._notIgnoreOrNull(val);
+							if(!checkVal) {
+								if(checkVal === null) {
+									val = null;
+								} else {
+									size--;
+									continue;
+								}
+							}
+							this._loop(val);
 						}
-						if(this._arrayEncoding !== 2) {
-							this._u[this._i++] = 106;
+						if(r !== this._r) {
+							index -= this._r;
+						}
+						switch(type) {
+							case 1: this._u[index] = size; break;
+							case 2: case 3: this._v.setUint32(index, size); break;
+							case 4: this._v.setUint32(index, size); this._u[this._i++] = 106; break;
 						}
 					}
 				} else if(ArrayBuffer.isView(obj)) {
@@ -437,9 +463,9 @@ class Packer {
 						this._u.set(data, this._i);
 						if(isBitBinary) {
 							const val = this._u[this._i + length - 1];
-							const bitlength = Math.floor(Math.log2(val) + 1);
-							this._u[this._i + length - 1] = val << 8 - bitlength;
-							this._u[this._i - 1] = bitlength;
+							const bitLength = Math.floor(Math.log2(val) + 1);
+							this._u[this._i + length - 1] = val << 8 - bitLength;
+							this._u[this._i - 1] = bitLength;
 						}
 					}
 					this._i += length;
@@ -447,18 +473,20 @@ class Packer {
 					this._expand(6);
 					this._u[this._i++] = 116;
 					const keys = Object.keys(obj);
-					this._v.setUint32(this._i, keys.length);
+					let length = keys.length;
+					let index = this._i;
+					const r = this._r;
 					this._i += 4;
 					for(let n = 0; n < keys.length; n++) {
 						const key = keys[n];
-						const val = obj[key];
-						const type = typeof val;
-						if(type === "undefined" && this._undefinedEncoding === 2) { continue; }
-						if(type === "number" && !Number.isFinite(val)) {
-							if(Number.isNaN(val)) {
-								if(this._nanEncoding === 2) { continue; }
+						let val = obj[key];
+						const checkVal = this._notIgnoreOrNull(val);
+						if(!checkVal) {
+							if(checkVal === null) {
+								val = null;
 							} else {
-								if(this._infinityEncoding === 2) { continue; }
+								length--;
+								continue;
 							}
 						}
 						const keyLength = key.length;
@@ -509,10 +537,46 @@ class Packer {
 						}
 						this._loop(val);
 					}
+					if(r !== this._r) {
+						index -= this._r;
+					}
+					this._v.setUint32(index, length);
 				}
 				break;
 			}
 		}
+	}
+
+	/**
+	 * 
+	 * @param {*} val 
+	 * @returns 
+	 */
+	_notIgnoreOrNull(val) {
+		const type = typeof val;
+		if(type === "undefined") {
+			if(this._undefinedEncoding === 2) {
+				return null;
+			} else if(this._undefinedEncoding === 3) {
+				return false;
+			}
+		}
+		if(type === "number" && !Number.isFinite(val)) {
+			if(Number.isNaN(val)) {
+				if(this._nanEncoding === 2) {
+					return null;
+				} else if(this._nanEncoding === 3) {
+					return false;
+				}
+			} else {
+				if(this._infinityEncoding === 2) {
+					return null;
+				} else if(this._infinityEncoding === 3) {
+					return false;
+				}
+			}
+		}
+		return true;
 	}
 
 	/**
@@ -531,6 +595,7 @@ class Packer {
 				old = this._u.subarray(this._o, this._i);
 				this._u = new Uint8Array(this._poolSize);
 				this._i = old.length;
+				this._r = this._o;
 				this._o = 0;
 			}
 			this._v = new DataView(this._u.buffer);
