@@ -101,15 +101,17 @@ This object controls the encoding behavior and determines which JavaScript data 
 | option | values | default | description |
 |---|---|---|---|
 | string | "binary", "string" | "string" | Whether strings should be encoded as `STRING_EXT` or `BINARY_EXT` |
-| key | "binary", "string", "atom" | "atom" | Whether object keys should be encoded as `STRING_EXT`, `BINARY_EXT` or `ATOM_UTF8_EXT` |
+| key | "binary", "string", "atom" | "atom" | Whether object keys should be encoded as `STRING_EXT`, `BINARY_EXT` or `ATOM_*_EXT` |
 | safeInt | "bigint", "float" | "bigint" | Whether integers between 32 and 53 bits should be encoded as `SMALL_BIG_EXT` or `NEW_FLOAT_EXT` |
-| safeBigInt | "number", "bigint" | "number" | Whether BigInts smaller than 32 bits should be encoded as `INTEGER_EXT` or `SMALL_BIG_EXT` |
+| safeBigInt | "number", "bigint" | "number" | Whether BigInts smaller than 32 bits should be encoded as `*_INTEGER_EXT` or `SMALL_BIG_EXT` |
 | null | "atom", "nil" | "atom" | Whether null should be encoded as the Atom `nil` or as `NIL_EXT` |
-| undefined | "atom", "ignore" | "atom" | Whether undefined should be encoded as the Atom `undefined` or ignored |
-| infinity | "atom", "ignore" | "atom" | Whether Infinity should be encoded as the Atoms `positive_infinity` and `negative_infinity` or ignored |
-| nan | "atom", "ignore" | "atom" | Whether NaN should be encoded as the Atom `nan` or ignored |
+| undefined | "atom", "null", "ignore" | "atom" | Whether undefined should be encoded as the Atom `undefined`, converted to null or ignored\* |
+| infinity | "atom", "null", "ignore" | "atom" | Whether Infinity should be encoded as the Atoms `positive_infinity` and `negative_infinity`, converted to `null` or ignored\* |
+| nan | "atom", "null", "ignore" | "atom" | Whether NaN should be encoded as the Atom `nan`, converted to `null` or ignored\* |
 | buffer | "binary", "bitbinary", "string" | "binary" | Whether Buffers and TypedArrays should be encoded as `BINARY_EXT`, `BIT_BINARY_EXT` or `STRING_EXT` |
-| array | "list", "improperlist", "tuple" | "list" | Whether Arrays should be encoded as a proper nil-terminated `LIST_EXT`, an improper `LIST_EXT` or a `*_TUPLE_EXT` |
+| array | "list", "improperlist", "tuple" | "tuple" | Whether Arrays should be encoded as a proper nil-terminated `LIST_EXT`, an improper `LIST_EXT` or a `*_TUPLE_EXT` |
+
+\* Ignored types will have their object keys deleted and their array indexes spliced from the final value.
 
 ### Packer Limitations
 
