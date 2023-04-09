@@ -1,6 +1,6 @@
 {
   "name": "wetf",
-  "version": "0.9.11",
+  "version": "0.9.12",
   "description": "A highly customizable and stupid fast ETF (External Term Format) encoder/decoder for NodeJS and Browsers.",
   "keywords": [
     "etf",
@@ -31,12 +31,12 @@
   },
   "devDependencies": {
     "@devsnek/earl": "github:devsnek/earl",
-    "@types/node": "^18.14.4",
+    "@types/node": "^18.15.11",
     "@typescord/ftee": "^0.9.1",
     "erlang_js": "^2.0.5",
     "erlpack": "github:discord/erlpack",
     "erlpackjs": "^1.0.1",
-    "eslint": "^8.35.0",
+    "eslint": "^8.38.0",
     "etf.js": "^1.0.1",
     "nanobench": "^3.0.0",
     "uglify-js": "^3.17.4"
