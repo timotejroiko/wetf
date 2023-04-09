@@ -256,13 +256,18 @@ class Packer {
 					if(abs < 18446744073709551616n) {
 						this._expand(11);
 						if(this._safeBigIntEncoding === 1 && abs < 2147483648n) {
-							this._u[this._i] = 98;
-							this._v.setBigUint64(this._i + 1, abs);
-							if(neg) {
-								const n = this._u[this._i + 1];
-								this._u[this._i + 1] = n | 128;
+							if(abs < 256n && !neg) {
+								this._u[this._i++] = 97;
+								this._v.setBigUint64(this._i++, abs);
+							} else {
+								this._u[this._i++] = 98;
+								this._v.setBigUint64(this._i, abs);
+								if(neg) {
+									const n = this._u[this._i];
+									this._u[this._i] = n | 128;
+								}
+								this._i += 4;
 							}
-							this._i += 5;
 						} else {
 							this._u[this._i] = 110;
 							this._u[this._i + 2] = Number(neg);
