@@ -1,7 +1,7 @@
 // very basic integrity test, need to increase coverage but for now its fine
 // also should probably test against actual erlpack data, not against js
 
-const { Packer, Unpacker } = require("../index");
+const { Packer, Unpacker } = require("../");
 
 const packer = new Packer({ encoding: { safeBigInt: "bigint" } });
 const unpacker = new Unpacker({});
