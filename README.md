@@ -12,36 +12,76 @@ In addition, **Wetf** is fast, [stupid fast](#benchmark), it was designed for ab
 
 ## Installation
 
-**Wetf** supports both NodeJS and Browsers.
+**Wetf** works everywhere, including Node.js, Browsers, Deno, Bun, Electron and more.
 
-### Node
+### Runtimes
 
-Installing for NodeJS is as simple as running:
+Installation for various runtimes can be done using most package managers:
 
 ```sh
 npm i wetf
+pnpm add wetf
+yarn add wetf
+bun add wetf
 ```
 
-Afterwards you can require it:
+Likewise, it can be used in any format desired:
 
 ```js
+// cjs
 const { Packer, Unpacker } = require("wetf");
+const Packer = require("wetf/packer");
+
+// esm
+import { Packer, Unpacker } from "wetf";
+
+// deno with npm
+import { Packer, Unpacker } from "npm:wetf";
+
+// deno with unpkg
+import { Packer, Unpacker } from "https://unpkg.com/wetf/esm/wetf.js";
 ```
 
 ### Browser
 
-For Browsers you can access the minified UMD version. There are separate versions for including only the Packer or only the Unpacker as well.
-
-```html
-<script src="https://unpkg.com/wetf/umd/wetf.min.js"></script> // ~5.2kb compressed
-<script src="https://unpkg.com/wetf/umd/packer.min.js"></script> // ~3.2kb compressed
-<script src="https://unpkg.com/wetf/umd/unpacker.min.js"></script> // ~2.5kb compressed
-```
-
-Then you can access the global **Wetf** object:
+For Browsers you can access the minified UMD versions or the ESM versions as a module. There are separate versions for including only the Packer or only the Unpacker.
 
 ```js
-const { Packer, Unpacker } = Wetf;
+// minified umd
+"https://unpkg.com/wetf/umd/packer.min.js" // packer only, ~3.2kb compressed
+"https://unpkg.com/wetf/umd/unpacker.min.js" // unpacker only, ~2.5kb compressed
+"https://unpkg.com/wetf/umd/wetf.min.js" // both, ~5.2kb compressed
+
+// esm
+"https://unpkg.com/wetf/esm/packer.js" // packer only
+"https://unpkg.com/wetf/esm/unpacker.js" // unpacker only
+"https://unpkg.com/wetf/esm/wetf.mjs" // both
+```
+
+Examples:
+
+```html
+<!-- regular script -->
+<script src="https://unpkg.com/wetf/umd/packer.min.js"></script>
+<script>
+    const { Packer } = Wetf;
+</script>
+```
+
+```html
+<!-- requirejs -->
+<script>
+    require(["https://unpkg.com/wetf/umd/unpacker.min.js"], function(Wetf) {
+        const { Unpacker } = Wetf;
+    });
+</script>
+```
+
+```html
+<!-- esm -->
+<script type="module">
+    import { Packer, Unpacker } from "https://unpkg.com/wetf/esm/wetf.js";
+</script>
 ```
 
 ### Usage
@@ -51,7 +91,7 @@ const { Packer, Unpacker } = Wetf;
 ## Packer
 
 The **Wetf** Packer is used to convert JavaScript objects and data into the binary ETF format.  
-Packer contains a single `pack` function that synchronously returns an instance of Uint8Array containing the binary data.  
+A Packer instance contains a single `pack` method that synchronously returns an instance of Uint8Array containing the binary data.  
 
 ```js
 const packer = new Packer({
@@ -123,18 +163,18 @@ And does not support encoding the following JS objects:
 
 `Map`, `Set`, `Date`, `Error`, `ArrayBuffer`, `DataView`, `Function`, `RegExp`
 
-Methods to create and support some of these types and objects might be added in the future, feel free to open a feature request issue.
+Methods to create and support some of these types and objects might be added in the future, feel free to open a feature request or issue.
 
 The following JS objects may have special rules and behavior:
 
-Symbols are stringified to `Symbol(description)` and encoded using the same rules as strings.
+`Symbol`s are stringified to `Symbol(description)` and encoded as strings.
 
-ArrayBuffer and DataView are not directly supported, but Buffer and TypedArrays are.
+`ArrayBuffer` and `DataView` are not directly supported, but Buffer and TypedArrays are.
 
 ## Unpacker
 
 The **Wetf** Unpacker is used to convert ETF binary data into JavaScript objects and values.  
-Unpacker contains a single `unpack` function that synchronously processes the binary data and returns a JavaScript value.  
+An Unpacker instance contains a single `unpack` method that synchronously processes the binary data and returns a JavaScript value.  
 
 ```js
 const unpacker = new Unpacker({
