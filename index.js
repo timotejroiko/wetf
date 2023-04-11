@@ -1,11 +1,11 @@
-const Wetf = {
-	Packer: require("./src/packer"),
-	Unpacker: require("./src/unpacker")
-};
 
+const Packer = require("./src/packer.js");
+const Unpacker = require("./src/unpacker.js");	
+const Wetf = { Packer, Unpacker };
 module.exports = {
 	Wetf,
 	default: Wetf,
-	Packer: Wetf.Packer,
-	Unpacker: Wetf.Unpacker,
+	Packer,
+	Unpacker
 };
+	
