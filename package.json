@@ -14,20 +14,37 @@
   "license": "MIT",
   "author": "Timotej Valentin Rojko",
   "main": "./index.js",
+  "module": "./esm/wetf.js",
   "types": "./types/index.d.ts",
   "files": [
     "./index.js",
     "./src",
+    "./esm",
     "./umd",
-    "./types"
+    "./types",
+    "./scripts"
   ],
+  "exports": {
+    ".": {
+      "require": "./index.js",
+      "import": "./esm/wetf.js"
+    },
+    "./packer": {
+      "require": "./src/packer.js",
+      "import": "./esm/packer.js"
+    },
+    "./unpacker": {
+      "require": "./src/unpacker.js",
+      "import": "./esm/unpacker.js"
+    }
+  },
   "scripts": {
     "benchmark": "node ./scripts/benchmark.js",
     "benchmark2": "node ./scripts/benchmark2.js",
-    "build": "npm run test && npm run umd && npm run types",
+    "build": "npm run dist && npm run types && npm run test",
     "test": "eslint && tsc -p ./ && node ./scripts/test.js",
     "types": "tsc -p ./ --noEmit false --emitDeclarationOnly true",
-    "umd": "node ./scripts/umd.js"
+    "dist": "node ./scripts/dist.js"
   },
   "devDependencies": {
     "@devsnek/earl": "github:devsnek/earl",
