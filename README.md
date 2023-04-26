@@ -39,30 +39,32 @@ import { Packer, Unpacker } from "wetf";
 import { Packer, Unpacker } from "npm:wetf";
 
 // deno with unpkg
-import { Packer, Unpacker } from "https://unpkg.com/wetf/esm/wetf.js";
+import { Packer } from "https://unpkg.com/wetf/esm/packer.js";
+
+// deno with jsdelivr
+import { Unpacker } from "https://cdn.jsdelivr.net/npm/wetf/esm/unpacker.min.js";
 ```
 
-### Browser
+### Browsers
 
-For Browsers you can access the minified UMD versions or the ESM versions as a module. There are separate versions for including only the Packer or only the Unpacker.
+For Browsers you can access both the UMD versions and the ESM versions via `unpkg` and their minified versions via `jsdelivr`. There are separate versions to include only the Packer or only the Unpacker.
 
 ```js
-// minified umd
-"https://unpkg.com/wetf/umd/packer.min.js" // packer only, ~3.2kb compressed
-"https://unpkg.com/wetf/umd/unpacker.min.js" // unpacker only, ~2.5kb compressed
-"https://unpkg.com/wetf/umd/wetf.min.js" // both, ~5.2kb compressed
+// via jsdelivr
+"https://cdn.jsdelivr.net/npm/wetf/{umd | esm}/{packer | unpacker | wetf}.js"
 
-// esm
-"https://unpkg.com/wetf/esm/packer.js" // packer only
-"https://unpkg.com/wetf/esm/unpacker.js" // unpacker only
-"https://unpkg.com/wetf/esm/wetf.mjs" // both
+// minified via jsdelivr
+"https://cdn.jsdelivr.net/npm/wetf/{umd | esm}/{packer | unpacker | wetf}.min.js"
+
+// via unpkg
+"https://unpkg.com/wetf/{umd | esm}/{packer | unpacker | wetf}.js"
 ```
 
 Examples:
 
 ```html
 <!-- regular script -->
-<script src="https://unpkg.com/wetf/umd/packer.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/wetf/umd/packer.min.js"></script>
 <script>
     const { Packer } = Wetf;
 </script>
@@ -71,8 +73,17 @@ Examples:
 ```html
 <!-- requirejs -->
 <script>
-    require(["https://unpkg.com/wetf/umd/unpacker.min.js"], function(Wetf) {
+    require(["https://cdn.jsdelivr.net/npm/wetf/umd/unpacker.min.js"], function(Wetf) {
         const { Unpacker } = Wetf;
+    });
+</script>
+```
+
+```html
+<!-- systemjs -->
+<script>
+    System.import("https://cdn.jsdelivr.net/npm/wetf/umd/wetf.min.js").then(Wetf => {
+        const { Packer, Unpacker } = Wetf;
     });
 </script>
 ```
@@ -80,7 +91,7 @@ Examples:
 ```html
 <!-- esm -->
 <script type="module">
-    import { Packer, Unpacker } from "https://unpkg.com/wetf/esm/wetf.js";
+    import { Packer, Unpacker } from "https://cdn.jsdelivr.net/npm/wetf/esm/wetf.min.js";
 </script>
 ```
 
