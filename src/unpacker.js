@@ -24,6 +24,11 @@ class Unpacker {
 		/** @private */ this._safebigintDecoding = ["number", "bigint", "string"].indexOf(options.decoding?.safebigint?.toLowerCase() ?? "") + 1 || 2;
 		/** @private */ this._bigintDecoding = ["bigint", "string"].indexOf(options.decoding?.bigint?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._atomRegistration = Boolean(options.atomRegistration ?? true);
+		/** @private */ this._d = new Uint8Array(0);
+		/** @private */ this._v = new DataView(this._d.buffer, this._d.byteOffset, this._d.length);
+		/** @private */ this._sd = new Uint8Array(12000);
+		/** @private */ this._sv = new DataView(this._sd.buffer, this._sd.byteOffset, this._sd.length);
+		/** @private */ this._i = 0;
 
 		if(typeof process !== "undefined" && typeof process?.versions?.node === "string") {
 			const { StringDecoder } = require("node:string_decoder");
@@ -46,11 +51,6 @@ class Unpacker {
 			}
 			if(!this._decompressor) { this._decompressor = "decompressionstream"; }
 		}
-		/** @private */ this._d = new Uint8Array(0);
-		/** @private */ this._v = new DataView(this._d.buffer, this._d.byteOffset, this._d.length);
-		/** @private */ this._sd = new Uint8Array(12000);
-		/** @private */ this._sv = new DataView(this._sd.buffer, this._sd.byteOffset, this._sd.length);
-		/** @private */ this._i = 0;
 
 		/** @private */ this._atoms = options.atomTable ?? {
 			true: true,
@@ -64,27 +64,23 @@ class Unpacker {
 			negative_infinity: -Infinity
 		};
 
-		const encoder = new TextEncoder();
-		/** @private */ this._atomTableLatin = Object.entries(this._atoms).reduce((/** @type {any[]} */ a, o) => {
-			const [key, val] = o;
-			let t = a[key.length] ??= [];
-			for(let i = 0; i < key.length; i++) {
-				const char = key.charCodeAt(i);
-				t = t[char] ??= i === key.length - 1 ? val : [];
-			}
-			return a;
-		}, []);
+		/** @private @type {*[]} */ this._atomTableLatin = [];
+		/** @private @type {*[]} */ this._atomTableUtf = [];
 
-		/** @private */ this._atomTableUtf = Object.entries(this._atoms).reduce((/** @type {any[]} */ a, o) => {
-			const [key, val] = o;
+		const encoder = new TextEncoder();
+		for(const [key, val] of Object.entries(this._atoms)) {
 			const codes = encoder.encode(key);
-			let t = a[codes.length] ??= [];
-			for(let i = 0; i < codes.length; i++) {
-				const char = codes[i];
-				t = t[char] ??= i === codes.length - 1 ? val : [];
+			let t1 = this._atomTableLatin[key.length] ??= [];
+			let t2 = this._atomTableUtf[codes.length] ??= [];
+			for(let i = 0; i < key.length; i++) {
+				const char1 = key.charCodeAt(i);
+				t1 = t1[char1] ??= i === key.length - 1 ? val : [];
 			}
-			return a;
-		}, []);
+			for(let i = 0; i < codes.length; i++) {
+				const char2 = codes[i];
+				t2 = t2[char2] ??= i === codes.length - 1 ? val : [];
+			}
+		}
 	}
 
 	/**
