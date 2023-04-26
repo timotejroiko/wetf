@@ -5,7 +5,10 @@
   "keywords": [
     "etf",
     "erlpack",
-    "erlang"
+    "erlang",
+    "external term format",
+    "encoder",
+    "decoder"
   ],
   "homepage": "https://github.com/timotejroiko/wetf",
   "bugs": "https://github.com/timotejroiko/wetf/issues",
@@ -27,15 +30,21 @@
   "exports": {
     ".": {
       "require": "./index.js",
-      "import": "./esm/wetf.js"
+      "import": "./esm/wetf.js",
+      "browser": "./umd/wetf.min.js",
+      "types": "./types/index.d.ts"
     },
     "./packer": {
       "require": "./src/packer.js",
-      "import": "./esm/packer.js"
+      "import": "./esm/packer.js",
+      "browser": "./umd/packer.min.js",
+      "types": "./types/src/packer.d.ts"
     },
     "./unpacker": {
       "require": "./src/unpacker.js",
-      "import": "./esm/unpacker.js"
+      "import": "./esm/unpacker.js",
+      "browser": "./umd/unpacker.min.js",
+      "types": "./types/src/unpacker.d.ts"
     }
   },
   "scripts": {
