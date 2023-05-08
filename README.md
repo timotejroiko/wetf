@@ -1,5 +1,9 @@
 # Wetf
 
+<p align="center">
+  <img width="250" src="https://github.com/timotejroiko/wetf/blob/main/logo.png?raw=true" alt="Wetf Logo"/>
+</p>
+
 A highly customizable and stupid fast ETF (External Term Format) encoder/decoder for NodeJS and Browsers.
 
 External Term Format, or ETF, is the binary serialization format used by Erlang and Elixir for inter-process communication. ETF has seen prominent usage in many languages and systems as a replacement to JSON, mostly for languages that are better equipped to deal with binary formats rather than string-based formats. ETF is also often used for websocket communication with online API's such as the Discord API.
