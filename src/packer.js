@@ -258,10 +258,14 @@ class Packer {
 						if(this._safeBigIntEncoding === 1 && abs < 2147483648n) {
 							if(abs < 256n && !neg) {
 								this._u[this._i++] = 97;
-								this._v.setBigUint64(this._i++, abs);
+								this._v.setBigUint64(this._i++, abs, true); // faster than u[i] = Number(abs)
 							} else {
 								this._u[this._i++] = 98;
 								this._v.setBigUint64(this._i, abs);
+								this._u[this._i] = this._u[this._i + 4];
+								this._u[this._i + 1] = this._u[this._i + 5];
+								this._u[this._i + 2] = this._u[this._i + 6];
+								this._u[this._i + 3] = this._u[this._i + 7];
 								if(neg) {
 									const n = this._u[this._i];
 									this._u[this._i] = n | 128;
@@ -287,7 +291,7 @@ class Packer {
 						this._u[this._i + 2] = Number(neg);
 						this._v.setBigUint64(this._i + 3, abs & 18446744073709551615n, true);
 						this._v.setBigUint64(this._i + 11, abs >> 64n, true);
-						for(let n = 18; n > 11; n--) {
+						for(let n = 18; n > 10; n--) {
 							if(this._u[this._i + n] !== 0) {
 								this._u[this._i + 1] = n - 2;
 								this._i += n + 1;
@@ -298,61 +302,43 @@ class Packer {
 						this._expand(35);
 						this._u[this._i] = 110;
 						this._u[this._i + 2] = Number(neg);
-						this._v.setBigUint64(this._i + 3, abs & 18446744073709551615n, true);
-						this._v.setBigUint64(this._i + 11, (abs >> 64n) & 18446744073709551615n, true);
-						this._v.setBigUint64(this._i + 19, (abs >> 128n) & 18446744073709551615n, true);
-						this._v.setBigUint64(this._i + 27, abs >> 192n, true);
-						for(let n = 34; n > 27; n--) {
+						const upper = abs >> 128n;
+						const lower = abs & 340282366920938463463374607431768211455n;
+						this._v.setBigUint64(this._i + 3, lower & 18446744073709551615n, true);
+						this._v.setBigUint64(this._i + 11, lower >> 64n, true);
+						this._v.setBigUint64(this._i + 19, upper & 18446744073709551615n, true);
+						this._v.setBigUint64(this._i + 27, upper >> 64n, true);
+						for(let n = 34; n > 18; n--) {
 							if(this._u[this._i + n] !== 0) {
 								this._u[this._i + 1] = n - 2;
 								this._i += n + 1;
 								break;
 							}
 						}
-					} 
-					
-					/*
-					else if(abs < 13407807929942597099574024998205846127479365820592393377723561443721764030073546976801874298166903427690031858186486050853753882811946569946433649006084096n) {
-
-					} else if(abs < 179769313486231590772930519078902473361797697894230657273430081157732675805500963132708477322407536021120113879871393357658789768814416622492847430639474124377767893424865485276302219601246094119453082952085005768838150682342462881473913110540827237163350510684586298239947245938479716304835356329624224137216n) {
-
-					} else if(abs < 126238304966058622268417487065116999845484776053576109500509161826268184136202698801551568013761380717534054534851164138648904527931605160527688095259563605939964364716019515983399209962459578542172100149937763938581219604072733422507180056009672540900709554109516816573779593326332288314873251559077853068444977864803391962580800682760017849589281937637993445539366428356761821065267423102149447628375691862210717202025241630303118559188678304314076943801692528246980959705901641444238894928620825482303431806955690226308773426829503900930529395181208739591967195841536053143145775307050594328881077553168201547776) {
-
 					} else {
-
-					}
-					*/
-					
-					else {
 						// room for optimization but not worth it because numbers this big are rarely used
 						let n = abs;
-						const a = [];
+						const chunks = [];
 						// eslint-disable-next-line no-constant-condition
-						while(true) {
-							let k = n & 115792089237316195423570985008687907853269984665640564039457584007913129639935n;
-							let k1 = k >> 128n;
-							let k2 = k & 340282366920938463463374607431768211455n;
-							// eslint-disable-next-line no-cond-assign
-							if(n >>= 256n) {
-								a.push(k2 & 18446744073709551615n, k2 >> 64n, k1 & 18446744073709551615n, k1 >> 64n);
-							} else {
-								const n1 = k2 & 18446744073709551615n;
-								const n2 = k2 >> 64n;
-								const n3 = k1 & 18446744073709551615n;
-								const n4 = k1 >> 64n;
-								if(n4 > 0n) {
-									a.push(n1, n2, n3, n4);
-								} else if(n3 > 0n) {
-									a.push(n1, n2, n3);
-								} else if(n2 > 0n) {
-									a.push(n1, n2);
-								} else {
-									a.push(n1);
-								}
-								break;
-							}
+						while(n > 115792089237316195423570985008687907853269984665640564039457584007913129639935n) {
+							const slice = n & 115792089237316195423570985008687907853269984665640564039457584007913129639935n;
+							const upper = slice >> 128n;
+							const lower = slice & 340282366920938463463374607431768211455n;
+							chunks.push(lower & 18446744073709551615n, lower >> 64n, upper & 18446744073709551615n, upper >> 64n);
+							n >>= 256n;
 						}
-						const size = a.length * 8;
+						if(n > 340282366920938463463374607431768211455n) {
+							const upper = n >> 128n;
+							const lower = n & 340282366920938463463374607431768211455n;
+							chunks.push(lower & 18446744073709551615n, lower >> 64n, upper & 18446744073709551615n, upper >> 64n);
+						} else if(n > 18446744073709551615n) {
+							chunks.push(n & 18446744073709551615n, n >> 64n);
+						} else if(n > 0n) {
+							chunks.push(n);
+						}
+						const last = chunks[chunks.length - 1];
+						const cutoff = last < 4294967296n ? last < 65536n ? last < 256n ? 7 : 6 : last < 16777216n ? 5 : 4 : last < 281474976710656n ? last < 1099511627776n ? 3 : 2 : last < 72057594037927936n ? 1 : 0;
+						const size = chunks.length * 8 - cutoff;
 						this._expand(size + 6);
 						if(size < 256) {
 							this._u[this._i] = 110;
@@ -365,8 +351,8 @@ class Packer {
 							this._u[this._i + 5] = Number(neg);
 							this._i += 6;
 						}
-						for(let i = 0; i < a.length; i++) {
-							const val = a[i];
+						for(let i = 0; i < chunks.length; i++) {
+							const val = chunks[i];
 							const offset = this._i + i * 8;
 							this._v.setBigUint64(offset, val, true);
 						}
