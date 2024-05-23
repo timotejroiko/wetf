@@ -21,7 +21,7 @@ class Packer {
 	 * @returns 
 	 */
 	constructor(options = {}) {
-		/** @private */ this._compressor = options.compression ?? false;		
+		/** @private */ this._compressor = options.compression ?? false;
 		/** @private */ this._stringEncoding = ["string", "binary"].indexOf(options.encoding?.string?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._keyEncoding = ["atom", "binary", "string"].indexOf(options.encoding?.key?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._safeIntEncoding = ["bigint", "float"].indexOf(options.encoding?.safeInt?.toLowerCase() ?? "") + 1 || 1;
@@ -68,8 +68,6 @@ class Packer {
 				};
 			} else if(this._compressor === "compressionstream") {
 				this._z = (/** @type {Uint8Array} */ raw) => {
-					// @ts-expect-error missing from webstreams types?
-					// eslint-disable-next-line no-undef
 					const compression = new CompressionStream("deflate");
 					const reader = compression.readable.getReader();
 					const writer = compression.writable.getWriter();
@@ -79,7 +77,7 @@ class Packer {
 			} else if(typeof this._compressor === "function") {
 				const fn = this._compressor;
 				this._z = (/** @type {Uint8Array} */ raw) => {
-					let comp = fn(raw);
+					const comp = fn(raw);
 					if(comp instanceof Promise) {
 						return comp.then(this._compressorOut);
 					}
@@ -143,6 +141,7 @@ class Packer {
 			}
 			case "string": case "symbol": {
 				if(type === "symbol") {
+					// eslint-disable-next-line no-param-reassign
 					obj = obj.toString();
 				}
 				if(this._stringEncoding === 2) {
@@ -284,7 +283,6 @@ class Packer {
 								}
 							}
 						}
-						
 					} else if(abs < 340282366920938463463374607431768211456n) {
 						this._expand(19);
 						this._u[this._i] = 110;
@@ -319,7 +317,6 @@ class Packer {
 						// room for optimization but not worth it because numbers this big are rarely used
 						let n = abs;
 						const chunks = [];
-						// eslint-disable-next-line no-constant-condition
 						while(n > 115792089237316195423570985008687907853269984665640564039457584007913129639935n) {
 							const slice = n & 115792089237316195423570985008687907853269984665640564039457584007913129639935n;
 							const upper = slice >> 128n;
@@ -383,7 +380,7 @@ class Packer {
 					} else {
 						let size = obj.length;
 						let index = this._i + 1;
-						let type = 1;
+						let ty = 1;
 						const r = this._r;
 						if(this._arrayEncoding === 3) {
 							if(obj.length < 256) {
@@ -392,16 +389,16 @@ class Packer {
 							} else {
 								this._u[this._i] = 105;
 								this._i += 5;
-								type = 2;
+								ty = 2;
 							}
 						} else {
 							this._u[this._i] = 108;
 							this._i += 5;
 							if(this._arrayEncoding === 2) {
 								size--;
-								type = 3;
+								ty = 3;
 							} else {
-								type = 4;
+								ty = 4;
 							}
 						}
 						for(let i = 0; i < obj.length; i++) {
@@ -420,7 +417,7 @@ class Packer {
 						if(r !== this._r) {
 							index -= this._r;
 						}
-						switch(type) {
+						switch(ty) {
 							case 1: this._u[index] = size; break;
 							case 2: case 3: this._v.setUint32(index, size); break;
 							case 4: this._v.setUint32(index, size); this._u[this._i++] = 106; break;
@@ -505,14 +502,12 @@ class Packer {
 							} else if(this._keyEncoding === 3) {
 								this._u[this._i] = 107;
 								size = 2;
+							} else if(possibleLength < 256) {
+								this._u[this._i] = 119;
+								size = 1;
 							} else {
-								if(possibleLength < 256) {
-									this._u[this._i] = 119;
-									size = 1;
-								} else {
-									this._u[this._i] = 118;
-									size = 2;
-								}
+								this._u[this._i] = 118;
+								size = 2;
 							}
 							const temp_i = this._i + 1;
 							this._i += size + 1;
@@ -559,12 +554,10 @@ class Packer {
 				} else if(this._nanEncoding === 3) {
 					return false;
 				}
-			} else {
-				if(this._infinityEncoding === 2) {
-					return null;
-				} else if(this._infinityEncoding === 3) {
-					return false;
-				}
+			} else if(this._infinityEncoding === 2) {
+				return null;
+			} else if(this._infinityEncoding === 3) {
+				return false;
 			}
 		}
 		return true;
@@ -596,7 +589,7 @@ class Packer {
 			this._u.set(old);
 		}
 	}
-	
+
 	/**
 	 * @private
 	 * @param {string} string 
@@ -625,11 +618,10 @@ class Packer {
 				}
 			}
 			return this._i - actualLength;
-		} else {
-			const written = this._e(string, this._i);
-			this._i += written;
-			return written;
 		}
+		const written = this._e(string, this._i);
+		this._i += written;
+		return written;
 	}
 
 	/**
@@ -658,7 +650,6 @@ class Packer {
 	async _compressorStreamOut(reader) {
 		const chunks = [];
 		let size = 0;
-		// eslint-disable-next-line no-constant-condition
 		while(true) {
 			const { done, value } = await reader.read();
 			if(value) {

@@ -51,7 +51,7 @@
     "benchmark": "node ./scripts/benchmark.js",
     "benchmark2": "node ./scripts/benchmark2.js",
     "build": "npm run dist && npm run types && npm run test",
-    "test": "eslint && tsc -p ./ && node ./scripts/test.js",
+    "test": "eslint index.js src && tsc -p ./ && node ./scripts/test.js",
     "types": "tsc -p ./ --noEmit false --emitDeclarationOnly true",
     "dist": "node ./scripts/dist.js"
   },
@@ -64,6 +64,7 @@
     "eslint": "^9.3.0",
     "etf.js": "^1.0.1",
     "nanobench": "^3.0.0",
+    "typescript": "^5.4.5",
     "uglify-js": "^3.17.4"
   }
 }

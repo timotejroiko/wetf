@@ -55,6 +55,7 @@ class Unpacker {
 		/** @private */ this._atoms = options.atomTable ?? {
 			true: true,
 			false: false,
+			// eslint-disable-next-line no-undefined
 			undefined: undefined,
 			null: null,
 			nil: null,
@@ -98,17 +99,15 @@ class Unpacker {
 				const decomp = zlib.inflateSync(raw);
 				return this.unpack(decomp);
 			} else if(this._decompressor === "decompressionstream") {
-				// @ts-expect-error missing from webstreams types?
-				// eslint-disable-next-line no-undef
 				const decompression = new DecompressionStream("deflate");
 				const reader = decompression.readable.getReader();
 				const writer = decompression.writable.getWriter();
 				writer.ready.then(() => writer.write(raw)).then(() => writer.ready).then(() => writer.close());
-				return this._decompressorStreamOut(reader).then(data => this.unpack(data));
+				return this._decompressorStreamOut(reader).then(d => this.unpack(d));
 			} else if(typeof this._decompressor === "function") {
-				let decomp = this._decompressor(raw);
+				const decomp = this._decompressor(raw);
 				if(decomp instanceof Promise) {
-					return decomp.then(data => this.unpack(data));
+					return decomp.then(d => this.unpack(d));
 				}
 				return this.unpack(decomp);
 			}
@@ -204,14 +203,12 @@ class Unpacker {
 						const buffer = Buffer.allocUnsafe(length);
 						buffer.set(slice);
 						return buffer;
-					} else {
-						const uint8 = new Uint8Array(length);
-						uint8.set(slice);
-						return uint8;
 					}
-				} else {
-					return code === 2 ? this._latin(length) : this._utf(length);
+					const uint8 = new Uint8Array(length);
+					uint8.set(slice);
+					return uint8;
 				}
+				return code === 2 ? this._latin(length) : this._utf(length);
 			}
 			case 110: case 111: { // bigint / bigbigint
 				let length;
@@ -310,9 +307,8 @@ class Unpacker {
 					if(n === length - 1) {
 						this._i += length;
 						return t[v];
-					} else {
-						t = t[v];
 					}
+					t = t[v];
 				} else {
 					break;
 				}
@@ -362,7 +358,7 @@ class Unpacker {
 		if(length < this._T) {
 			const l = i + length;
 			while(i < l) {
-				let byte = this._d[i++];
+				const byte = this._d[i++];
 				if(byte < 128) { str += String.fromCharCode(byte); }
 				else if(byte < 224) { str += String.fromCharCode(((byte & 31) << 6) + (data[i++] & 63)); }
 				else if(byte < 240) { str += String.fromCharCode(((byte & 15) << 12) + ((data[i++] & 63) << 6) + (data[i++] & 63)); }
@@ -386,7 +382,7 @@ class Unpacker {
 	 */
 	_latin(length) {
 		let str = "";
-		let i = this._i;
+		const i = this._i;
 		const data = this._d;
 		if(length < this._T) {
 			for(let n = i; n < i + length; n++) {
@@ -407,7 +403,6 @@ class Unpacker {
 	async _decompressorStreamOut(reader) {
 		const chunks = [];
 		let size = 0;
-		// eslint-disable-next-line no-constant-condition
 		while(true) {
 			const { done, value } = await reader.read();
 			if(value) {
