@@ -50,6 +50,7 @@ bench("wetf unpack", function (b) {
 	b.end();
 });
 
+/*
 bench("erlpack pack", function (b) {
 	const { pack } = require("erlpack");
 	b.start();
@@ -72,6 +73,7 @@ bench("erlpack unpack", function (b) {
 	}
 	b.end();
 });
+*/
 
 bench("etf.js pack", function (b) {
 	const { pack } = require("etf.js");
