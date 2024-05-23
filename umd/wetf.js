@@ -66,7 +66,7 @@
 				} else if (typeof this._compressor === "function") {
 					const fn = this._compressor;
 					this._z = raw => {
-						let comp = fn(raw);
+						const comp = fn(raw);
 						if (comp instanceof Promise) {
 							return comp.then(this._compressorOut);
 						}
@@ -250,10 +250,14 @@
 							if (this._safeBigIntEncoding === 1 && abs < 2147483648n) {
 								if (abs < 256n && !neg) {
 									this._u[this._i++] = 97;
-									this._v.setBigUint64(this._i++, abs);
+									this._v.setBigUint64(this._i++, abs, true);
 								} else {
 									this._u[this._i++] = 98;
 									this._v.setBigUint64(this._i, abs);
+									this._u[this._i] = this._u[this._i + 4];
+									this._u[this._i + 1] = this._u[this._i + 5];
+									this._u[this._i + 2] = this._u[this._i + 6];
+									this._u[this._i + 3] = this._u[this._i + 7];
 									if (neg) {
 										const n = this._u[this._i];
 										this._u[this._i] = n | 128;
@@ -278,7 +282,7 @@
 							this._u[this._i + 2] = Number(neg);
 							this._v.setBigUint64(this._i + 3, abs & 18446744073709551615n, true);
 							this._v.setBigUint64(this._i + 11, abs >> 64n, true);
-							for (let n = 18; n > 11; n--) {
+							for (let n = 18; n > 10; n--) {
 								if (this._u[this._i + n] !== 0) {
 									this._u[this._i + 1] = n - 2;
 									this._i += n + 1;
@@ -289,11 +293,13 @@
 							this._expand(35);
 							this._u[this._i] = 110;
 							this._u[this._i + 2] = Number(neg);
-							this._v.setBigUint64(this._i + 3, abs & 18446744073709551615n, true);
-							this._v.setBigUint64(this._i + 11, abs >> 64n & 18446744073709551615n, true);
-							this._v.setBigUint64(this._i + 19, abs >> 128n & 18446744073709551615n, true);
-							this._v.setBigUint64(this._i + 27, abs >> 192n, true);
-							for (let n = 34; n > 27; n--) {
+							const upper = abs >> 128n;
+							const lower = abs & 340282366920938463463374607431768211455n;
+							this._v.setBigUint64(this._i + 3, lower & 18446744073709551615n, true);
+							this._v.setBigUint64(this._i + 11, lower >> 64n, true);
+							this._v.setBigUint64(this._i + 19, upper & 18446744073709551615n, true);
+							this._v.setBigUint64(this._i + 27, upper >> 64n, true);
+							for (let n = 34; n > 18; n--) {
 								if (this._u[this._i + n] !== 0) {
 									this._u[this._i + 1] = n - 2;
 									this._i += n + 1;
@@ -302,31 +308,26 @@
 							}
 						} else {
 							let n = abs;
-							const a = [];
-							while (true) {
-								let k = n & 115792089237316195423570985008687907853269984665640564039457584007913129639935n;
-								let k1 = k >> 128n;
-								let k2 = k & 340282366920938463463374607431768211455n;
-								if (n >>= 256n) {
-									a.push(k2 & 18446744073709551615n, k2 >> 64n, k1 & 18446744073709551615n, k1 >> 64n);
-								} else {
-									const n1 = k2 & 18446744073709551615n;
-									const n2 = k2 >> 64n;
-									const n3 = k1 & 18446744073709551615n;
-									const n4 = k1 >> 64n;
-									if (n4 > 0n) {
-										a.push(n1, n2, n3, n4);
-									} else if (n3 > 0n) {
-										a.push(n1, n2, n3);
-									} else if (n2 > 0n) {
-										a.push(n1, n2);
-									} else {
-										a.push(n1);
-									}
-									break;
-								}
+							const chunks = [];
+							while (n > 115792089237316195423570985008687907853269984665640564039457584007913129639935n) {
+								const slice = n & 115792089237316195423570985008687907853269984665640564039457584007913129639935n;
+								const upper = slice >> 128n;
+								const lower = slice & 340282366920938463463374607431768211455n;
+								chunks.push(lower & 18446744073709551615n, lower >> 64n, upper & 18446744073709551615n, upper >> 64n);
+								n >>= 256n;
 							}
-							const size = a.length * 8;
+							if (n > 340282366920938463463374607431768211455n) {
+								const upper = n >> 128n;
+								const lower = n & 340282366920938463463374607431768211455n;
+								chunks.push(lower & 18446744073709551615n, lower >> 64n, upper & 18446744073709551615n, upper >> 64n);
+							} else if (n > 18446744073709551615n) {
+								chunks.push(n & 18446744073709551615n, n >> 64n);
+							} else if (n > 0n) {
+								chunks.push(n);
+							}
+							const last = chunks[chunks.length - 1];
+							const cutoff = last < 4294967296n ? last < 65536n ? last < 256n ? 7 : 6 : last < 16777216n ? 5 : 4 : last < 281474976710656n ? last < 1099511627776n ? 3 : 2 : last < 72057594037927936n ? 1 : 0;
+							const size = chunks.length * 8 - cutoff;
 							this._expand(size + 6);
 							if (size < 256) {
 								this._u[this._i] = 110;
@@ -339,8 +340,8 @@
 								this._u[this._i + 5] = Number(neg);
 								this._i += 6;
 							}
-							for (let i = 0; i < a.length; i++) {
-								const val = a[i];
+							for (let i = 0; i < chunks.length; i++) {
+								const val = chunks[i];
 								const offset = this._i + i * 8;
 								this._v.setBigUint64(offset, val, true);
 							}
@@ -373,7 +374,7 @@
 						} else {
 							let size = obj.length;
 							let index = this._i + 1;
-							let type = 1;
+							let ty = 1;
 							const r = this._r;
 							if (this._arrayEncoding === 3) {
 								if (obj.length < 256) {
@@ -382,16 +383,16 @@
 								} else {
 									this._u[this._i] = 105;
 									this._i += 5;
-									type = 2;
+									ty = 2;
 								}
 							} else {
 								this._u[this._i] = 108;
 								this._i += 5;
 								if (this._arrayEncoding === 2) {
 									size--;
-									type = 3;
+									ty = 3;
 								} else {
-									type = 4;
+									ty = 4;
 								}
 							}
 							for (let i = 0; i < obj.length; i++) {
@@ -410,7 +411,7 @@
 							if (r !== this._r) {
 								index -= this._r;
 							}
-							switch (type) {
+							switch (ty) {
 							case 1:
 								this._u[index] = size;
 								break;
@@ -504,14 +505,12 @@
 								} else if (this._keyEncoding === 3) {
 									this._u[this._i] = 107;
 									size = 2;
+								} else if (possibleLength < 256) {
+									this._u[this._i] = 119;
+									size = 1;
 								} else {
-									if (possibleLength < 256) {
-										this._u[this._i] = 119;
-										size = 1;
-									} else {
-										this._u[this._i] = 118;
-										size = 2;
-									}
+									this._u[this._i] = 118;
+									size = 2;
 								}
 								const temp_i = this._i + 1;
 								this._i += size + 1;
@@ -552,12 +551,10 @@
 					} else if (this._nanEncoding === 3) {
 						return false;
 					}
-				} else {
-					if (this._infinityEncoding === 2) {
-						return null;
-					} else if (this._infinityEncoding === 3) {
-						return false;
-					}
+				} else if (this._infinityEncoding === 2) {
+					return null;
+				} else if (this._infinityEncoding === 3) {
+					return false;
 				}
 			}
 			return true;
@@ -608,11 +605,10 @@
 					}
 				}
 				return this._i - actualLength;
-			} else {
-				const written = this._e(string, this._i);
-				this._i += written;
-				return written;
 			}
+			const written = this._e(string, this._i);
+			this._i += written;
+			return written;
 		}
 		_compressorOut(comp) {
 			const size = comp.length;
@@ -714,26 +710,22 @@
 				positive_infinity: Infinity,
 				negative_infinity: -Infinity
 			};
+			this._atomTableLatin = [];
+			this._atomTableUtf = [];
 			const encoder = new TextEncoder();
-			this._atomTableLatin = Object.entries(this._atoms).reduce((a, o) => {
-				const [ key, val ] = o;
-				let t = a[key.length] ??= [];
-				for (let i = 0; i < key.length; i++) {
-					const char = key.charCodeAt(i);
-					t = t[char] ??= i === key.length - 1 ? val : [];
-				}
-				return a;
-			}, []);
-			this._atomTableUtf = Object.entries(this._atoms).reduce((a, o) => {
-				const [ key, val ] = o;
+			for (const [ key, val ] of Object.entries(this._atoms)) {
 				const codes = encoder.encode(key);
-				let t = a[codes.length] ??= [];
-				for (let i = 0; i < codes.length; i++) {
-					const char = codes[i];
-					t = t[char] ??= i === codes.length - 1 ? val : [];
+				let t1 = this._atomTableLatin[key.length] ??= [];
+				let t2 = this._atomTableUtf[codes.length] ??= [];
+				for (let i = 0; i < key.length; i++) {
+					const char1 = key.charCodeAt(i);
+					t1 = t1[char1] ??= i === key.length - 1 ? val : [];
 				}
-				return a;
-			}, []);
+				for (let i = 0; i < codes.length; i++) {
+					const char2 = codes[i];
+					t2 = t2[char2] ??= i === codes.length - 1 ? val : [];
+				}
+			}
 		}
 		unpack(data) {
 			const i = data[0] === 131 ? 1 : 0;
@@ -749,11 +741,11 @@
 					const reader = decompression.readable.getReader();
 					const writer = decompression.writable.getWriter();
 					writer.ready.then(() => writer.write(raw)).then(() => writer.ready).then(() => writer.close());
-					return this._decompressorStreamOut(reader).then(data => this.unpack(data));
+					return this._decompressorStreamOut(reader).then(d => this.unpack(d));
 				} else if (typeof this._decompressor === "function") {
-					let decomp = this._decompressor(raw);
+					const decomp = this._decompressor(raw);
 					if (decomp instanceof Promise) {
-						return decomp.then(data => this.unpack(data));
+						return decomp.then(d => this.unpack(d));
 					}
 					return this.unpack(decomp);
 				}
@@ -797,7 +789,7 @@
 			case 119:
 				{
 					const length = type === 100 || type === 118 ? (this._d[this._i++] << 8) + this._d[this._i++] : this._d[this._i++];
-					return this._resolveAtom(length, type < 118);
+					return this._resolveAtom(length, type >= 118);
 				}
 
 			case 104:
@@ -865,14 +857,12 @@
 							const buffer = Buffer.allocUnsafe(length);
 							buffer.set(slice);
 							return buffer;
-						} else {
-							const uint8 = new Uint8Array(length);
-							uint8.set(slice);
-							return uint8;
 						}
-					} else {
-						return code === 2 ? this._latin(length) : this._utf(length);
+						const uint8 = new Uint8Array(length);
+						uint8.set(slice);
+						return uint8;
 					}
+					return code === 2 ? this._latin(length) : this._utf(length);
 				}
 
 			case 110:
@@ -973,9 +963,8 @@
 						if (n === length - 1) {
 							this._i += length;
 							return t[v];
-						} else {
-							t = t[v];
 						}
+						t = t[v];
 					} else {
 						break;
 					}
@@ -1013,7 +1002,7 @@
 			if (length < this._T) {
 				const l = i + length;
 				while (i < l) {
-					let byte = this._d[i++];
+					const byte = this._d[i++];
 					if (byte < 128) {
 						str += String.fromCharCode(byte);
 					} else if (byte < 224) {
@@ -1035,7 +1024,7 @@
 		}
 		_latin(length) {
 			let str = "";
-			let i = this._i;
+			const i = this._i;
 			const data = this._d;
 			if (length < this._T) {
 				for (let n = i; n < i + length; n++) {

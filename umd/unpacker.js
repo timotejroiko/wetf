@@ -60,26 +60,22 @@
 				positive_infinity: Infinity,
 				negative_infinity: -Infinity
 			};
+			this._atomTableLatin = [];
+			this._atomTableUtf = [];
 			const encoder = new TextEncoder();
-			this._atomTableLatin = Object.entries(this._atoms).reduce((a, o) => {
-				const [ key, val ] = o;
-				let t = a[key.length] ??= [];
-				for (let i = 0; i < key.length; i++) {
-					const char = key.charCodeAt(i);
-					t = t[char] ??= i === key.length - 1 ? val : [];
-				}
-				return a;
-			}, []);
-			this._atomTableUtf = Object.entries(this._atoms).reduce((a, o) => {
-				const [ key, val ] = o;
+			for (const [ key, val ] of Object.entries(this._atoms)) {
 				const codes = encoder.encode(key);
-				let t = a[codes.length] ??= [];
-				for (let i = 0; i < codes.length; i++) {
-					const char = codes[i];
-					t = t[char] ??= i === codes.length - 1 ? val : [];
+				let t1 = this._atomTableLatin[key.length] ??= [];
+				let t2 = this._atomTableUtf[codes.length] ??= [];
+				for (let i = 0; i < key.length; i++) {
+					const char1 = key.charCodeAt(i);
+					t1 = t1[char1] ??= i === key.length - 1 ? val : [];
 				}
-				return a;
-			}, []);
+				for (let i = 0; i < codes.length; i++) {
+					const char2 = codes[i];
+					t2 = t2[char2] ??= i === codes.length - 1 ? val : [];
+				}
+			}
 		}
 		unpack(data) {
 			const i = data[0] === 131 ? 1 : 0;
@@ -95,11 +91,11 @@
 					const reader = decompression.readable.getReader();
 					const writer = decompression.writable.getWriter();
 					writer.ready.then(() => writer.write(raw)).then(() => writer.ready).then(() => writer.close());
-					return this._decompressorStreamOut(reader).then(data => this.unpack(data));
+					return this._decompressorStreamOut(reader).then(d => this.unpack(d));
 				} else if (typeof this._decompressor === "function") {
-					let decomp = this._decompressor(raw);
+					const decomp = this._decompressor(raw);
 					if (decomp instanceof Promise) {
-						return decomp.then(data => this.unpack(data));
+						return decomp.then(d => this.unpack(d));
 					}
 					return this.unpack(decomp);
 				}
@@ -143,7 +139,7 @@
 			case 119:
 				{
 					const length = type === 100 || type === 118 ? (this._d[this._i++] << 8) + this._d[this._i++] : this._d[this._i++];
-					return this._resolveAtom(length, type < 118);
+					return this._resolveAtom(length, type >= 118);
 				}
 
 			case 104:
@@ -211,14 +207,12 @@
 							const buffer = Buffer.allocUnsafe(length);
 							buffer.set(slice);
 							return buffer;
-						} else {
-							const uint8 = new Uint8Array(length);
-							uint8.set(slice);
-							return uint8;
 						}
-					} else {
-						return code === 2 ? this._latin(length) : this._utf(length);
+						const uint8 = new Uint8Array(length);
+						uint8.set(slice);
+						return uint8;
 					}
+					return code === 2 ? this._latin(length) : this._utf(length);
 				}
 
 			case 110:
@@ -319,9 +313,8 @@
 						if (n === length - 1) {
 							this._i += length;
 							return t[v];
-						} else {
-							t = t[v];
 						}
+						t = t[v];
 					} else {
 						break;
 					}
@@ -359,7 +352,7 @@
 			if (length < this._T) {
 				const l = i + length;
 				while (i < l) {
-					let byte = this._d[i++];
+					const byte = this._d[i++];
 					if (byte < 128) {
 						str += String.fromCharCode(byte);
 					} else if (byte < 224) {
@@ -381,7 +374,7 @@
 		}
 		_latin(length) {
 			let str = "";
-			let i = this._i;
+			const i = this._i;
 			const data = this._d;
 			if (length < this._T) {
 				for (let n = i; n < i + length; n++) {

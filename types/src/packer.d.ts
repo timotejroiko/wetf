@@ -1,21 +1,21 @@
 export = Packer;
 declare class Packer {
     constructor(options?: {
-        poolSize?: number | undefined;
-        compression?: boolean | "zlib" | "compressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>) | undefined;
+        poolSize?: number;
+        compression?: boolean | "zlib" | "compressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>);
         encoding?: {
-            string?: "string" | "binary" | undefined;
-            key?: "string" | "binary" | "atom" | undefined;
-            safeInt?: "bigint" | "float" | undefined;
-            safeBigInt?: "number" | "bigint" | undefined;
-            null?: "atom" | "nil" | undefined;
-            buffer?: "string" | "binary" | "bitbinary" | undefined;
-            undefined?: "atom" | "null" | "ignore" | undefined;
-            infinity?: "atom" | "null" | "ignore" | undefined;
-            nan?: "atom" | "null" | "ignore" | undefined;
-            array?: "list" | "improperlist" | "tuple" | undefined;
-        } | undefined;
-        useLegacyAtoms?: boolean | undefined;
+            string?: "binary" | "string";
+            key?: "binary" | "string" | "atom";
+            safeInt?: "bigint" | "float";
+            safeBigInt?: "number" | "bigint";
+            null?: "atom" | "nil";
+            buffer?: "binary" | "bitbinary" | "string";
+            undefined?: "atom" | "null" | "ignore";
+            infinity?: "atom" | "null" | "ignore";
+            nan?: "atom" | "null" | "ignore";
+            array?: "list" | "improperlist" | "tuple";
+        };
+        useLegacyAtoms?: boolean;
     });
     private _compressor;
     private _stringEncoding;
