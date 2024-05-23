@@ -146,7 +146,7 @@ class Unpacker {
 			}
 			case 100: case 115: case 118: case 119: { // atom
 				const length = type === 100 || type === 118 ? (this._d[this._i++] << 8) + this._d[this._i++] : this._d[this._i++];
-				return this._resolveAtom(length, type < 118);
+				return this._resolveAtom(length, type >= 118);
 			}
 			case 104: case 105: case 108: { // tuple / large tuple / list
 				let length;
