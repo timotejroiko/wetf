@@ -648,3 +648,5 @@ export class Packer {
 		return out;
 	}
 }
+
+export default Packer;

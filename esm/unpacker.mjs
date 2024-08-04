@@ -406,3 +406,5 @@ export class Unpacker {
 		return out;
 	}
 }
+
+export default Unpacker;
