@@ -17,7 +17,7 @@
   "license": "MIT",
   "author": "Timotej Valentin Rojko",
   "main": "./index.js",
-  "module": "./esm/wetf.js",
+  "module": "./esm/wetf.mjs",
   "types": "./types/index.d.ts",
   "files": [
     "./index.js",
@@ -30,19 +30,19 @@
   "exports": {
     ".": {
       "require": "./index.js",
-      "import": "./esm/wetf.js",
+      "import": "./esm/wetf.mjs",
       "browser": "./umd/wetf.min.js",
       "types": "./types/index.d.ts"
     },
     "./packer": {
       "require": "./src/packer.js",
-      "import": "./esm/packer.js",
+      "import": "./esm/packer.mjs",
       "browser": "./umd/packer.min.js",
       "types": "./types/src/packer.d.ts"
     },
     "./unpacker": {
       "require": "./src/unpacker.js",
-      "import": "./esm/unpacker.js",
+      "import": "./esm/unpacker.mjs",
       "browser": "./umd/unpacker.min.js",
       "types": "./types/src/unpacker.d.ts"
     }

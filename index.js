@@ -1,6 +1,6 @@
 
 const Packer = require("./src/packer.js");
-const Unpacker = require("./src/unpacker.js");	
+const Unpacker = require("./src/unpacker.js");
 const Wetf = { Packer, Unpacker };
 module.exports = {
 	Wetf,
@@ -8,4 +8,3 @@ module.exports = {
 	Packer,
 	Unpacker
 };
-	
