@@ -654,4 +654,6 @@
 			return out;
 		}
 	};
+	Packer.Packer = Packer;
+	Packer.default = Packer;
 });

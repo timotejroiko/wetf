@@ -649,4 +649,8 @@ export class Packer {
 	}
 }
 
+Packer.Packer = Packer;
+
+Packer.default = Packer;
+
 export default Packer;

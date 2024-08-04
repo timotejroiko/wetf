@@ -412,4 +412,6 @@
 			return out;
 		}
 	};
+	Unpacker.Unpacker = Unpacker;
+	Unpacker.default = Unpacker;
 });

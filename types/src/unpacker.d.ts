@@ -40,3 +40,7 @@ declare class Unpacker {
     private _latin;
     private _decompressorStreamOut;
 }
+declare namespace Unpacker {
+    export { Unpacker };
+    export { Unpacker as default };
+}

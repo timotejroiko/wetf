@@ -675,4 +675,7 @@ class Packer {
 	}
 }
 
+Packer.Packer = Packer;
+Packer.default = Packer;
+
 module.exports = Packer;

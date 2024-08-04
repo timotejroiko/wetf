@@ -47,3 +47,7 @@ declare class Packer {
     private _compressorOut;
     private _compressorStreamOut;
 }
+declare namespace Packer {
+    export { Packer };
+    export { Packer as default };
+}

@@ -422,4 +422,7 @@ class Unpacker {
 	}
 }
 
+Unpacker.Unpacker = Unpacker;
+Unpacker.default = Unpacker;
+
 module.exports = Unpacker;

@@ -407,4 +407,8 @@ export class Unpacker {
 	}
 }
 
+Unpacker.Unpacker = Unpacker;
+
+Unpacker.default = Unpacker;
+
 export default Unpacker;

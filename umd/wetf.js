@@ -654,6 +654,8 @@
 			return out;
 		}
 	};
+	Packer.Packer = Packer;
+	Packer.default = Packer;
 	o.Unpacker = class Unpacker {
 		constructor(options = {}) {
 			this._decompressor = options.decompression;
@@ -1062,4 +1064,6 @@
 			return out;
 		}
 	};
+	Unpacker.Unpacker = Unpacker;
+	Unpacker.default = Unpacker;
 });
