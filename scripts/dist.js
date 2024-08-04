@@ -48,32 +48,32 @@ function makeESM() {
 	mkdirSync("./esm", { recursive: true });
 	const names = [];
 	src.forEach(({ name, content }) => {
-		const modified = content.slice(0, content.indexOf("module.exports")).replace("class ", "export class ");
-		writeFileSync(`./esm/${name}.js`, uglify.minify(modified, options).code);
+		const modified = content.slice(0, content.indexOf("module.exports")).replace("class ", "export class ") + `\nexport default ${name[0].toUpperCase() + name.slice(1)};\n\n`;
+		writeFileSync(`./esm/${name}.mjs`, uglify.minify(modified, options).code);
 		names.push(capitalize(name));
 	});
 	const index = 
 	`
-${names.map(x => `import { ${x} } from "./${x.toLowerCase()}.js";`).join("\n")}	
+${names.map(x => `import { ${x} } from "./${x.toLowerCase()}.mjs";`).join("\n")}
 const ${pkg} = { ${names.join(", ")} };
 export { ${names.join(", ")}, ${pkg} };
 export default { ${names.join(", ")} };
-	`;
-	writeFileSync("./esm/wetf.js", index);
+`;
+	writeFileSync("./esm/wetf.mjs", index);
 }
 
 function makeCJS() {
 	const names = src.map(x => capitalize(x.name));
 	const index = 
 	`
-${names.map(x => `const ${x} = require("./src/${x.toLowerCase()}.js");`).join("\n")}	
+${names.map(x => `const ${x} = require("./src/${x.toLowerCase()}.js");`).join("\n")}
 const ${pkg} = { ${names.join(", ")} };
 module.exports = {
 	${pkg},
 	default: ${pkg},
 	${names.join(",\n\t")}
 };
-	`;
+`;
 	writeFileSync("./index.js", index);
 }
 
