@@ -16,7 +16,7 @@ export class Unpacker {
 		if (typeof process !== "undefined" && typeof process?.versions?.node === "string") {
 			const {
 				StringDecoder
-			} = require("node:string_decoder");
+			} = typeof process?.getBuiltinModule === "function" ? process.getBuiltinModule("node:string_decoder") : require("node:string_decoder");
 			const utfDecoder = new StringDecoder("utf8");
 			const latinDecoder = new StringDecoder("latin1");
 			this._u = utfDecoder.write.bind(utfDecoder);
@@ -77,7 +77,7 @@ export class Unpacker {
 			const size = (data[i + 1] << 24) + (data[i + 2] << 16) + (data[i + 3] << 8) + data[i + 4];
 			const raw = data.subarray(i + 5, i + 5 + size);
 			if (this._decompressor === "zlib") {
-				const zlib = require("zlib");
+				const zlib = typeof process?.getBuiltinModule === "function" ? process.getBuiltinModule("node:zlib") : require("node:zlib");
 				const decomp = zlib.inflateSync(raw);
 				return this.unpack(decomp);
 			} else if (this._decompressor === "decompressionstream") {

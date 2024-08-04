@@ -61,7 +61,8 @@ class Packer {
 
 		if(this._compressor) {
 			if(this._compressor === "zlib") {
-				const zlib = require("zlib");
+				// @ts-ignore
+				const zlib = typeof process?.getBuiltinModule === "function" ? process.getBuiltinModule("node:zlib") : require("node:zlib");
 				/** @private */ this._z = (/** @type {Uint8Array} */ raw) => {
 					const comp = zlib.deflateSync(raw);
 					return this._compressorOut(comp);

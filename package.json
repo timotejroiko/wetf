@@ -57,14 +57,14 @@
   },
   "devDependencies": {
     "@devsnek/earl": "github:devsnek/earl",
-    "@types/node": "^20.12.12",
+    "@types/node": "^22.1.0",
     "@typescord/ftee": "^0.9.1",
     "erlang_js": "^2.0.5",
     "erlpackjs": "^1.0.1",
-    "eslint": "^9.3.0",
+    "eslint": "^9.8.0",
     "etf.js": "^1.0.1",
     "nanobench": "^3.0.0",
-    "typescript": "^5.4.5",
-    "uglify-js": "^3.17.4"
+    "typescript": "^5.5.4",
+    "uglify-js": "^3.19.1"
   }
 }

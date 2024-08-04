@@ -50,7 +50,7 @@
 			}
 			if (this._compressor) {
 				if (this._compressor === "zlib") {
-					const zlib = require("zlib");
+					const zlib = typeof process?.getBuiltinModule === "function" ? process.getBuiltinModule("node:zlib") : require("node:zlib");
 					this._z = raw => {
 						const comp = zlib.deflateSync(raw);
 						return this._compressorOut(comp);
