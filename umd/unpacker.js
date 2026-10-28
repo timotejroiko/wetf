@@ -362,7 +362,7 @@
 					} else {
 						const point = ((byte & 7) << 18) + ((data[i++] & 63) << 12) + ((data[i++] & 63) << 6) + (data[i++] & 63);
 						const c1 = 55296 + (point - 65536 >> 10);
-						const c2 = 55296 + (point - 65536 & 1023);
+						const c2 = 56320 + (point - 65536 & 1023);
 						str += String.fromCharCode(c1, c2);
 					}
 				}
