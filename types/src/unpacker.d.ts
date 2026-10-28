@@ -6,6 +6,7 @@ declare class Unpacker {
             nil?: "null" | "array";
             string?: "utf8" | "latin1" | "buffer" | "uint8array" | "array";
             binary?: "utf8" | "latin1" | "buffer" | "uint8array" | "array";
+            binaryKey?: "utf8" | "latin1";
             bitbinary?: "utf8" | "latin1" | "buffer" | "uint8array" | "array";
             safebigint?: "number" | "bigint" | "string";
             bigint?: "bigint" | "string";
@@ -17,6 +18,7 @@ declare class Unpacker {
     private _nilDecoding;
     private _stringDecoding;
     private _binaryDecoding;
+    private _binaryKeyDecoding;
     private _bitbinaryDecoding;
     private _safebigintDecoding;
     private _bigintDecoding;

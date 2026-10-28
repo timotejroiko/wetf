@@ -10,6 +10,7 @@
 			this._nilDecoding = [ "null", "array" ].indexOf(options.decoding?.nil?.toLowerCase() ?? "") + 1 || 1;
 			this._stringDecoding = [ "utf8", "latin1", "buffer", "uint8array", "array" ].indexOf(options.decoding?.string?.toLowerCase() ?? "") + 1 || 1;
 			this._binaryDecoding = [ "utf8", "latin1", "buffer", "uint8array", "array" ].indexOf(options.decoding?.binary?.toLowerCase() ?? "") + 1 || 4;
+			this._binaryKeyDecoding = [ "utf8", "latin1" ].indexOf(options.decoding?.binaryKey?.toLowerCase() ?? "") + 1;
 			this._bitbinaryDecoding = [ "utf8", "latin1", "buffer", "uint8array", "array" ].indexOf(options.decoding?.bitbinary?.toLowerCase() ?? "") + 1 || 4;
 			this._safebigintDecoding = [ "number", "bigint", "string" ].indexOf(options.decoding?.safebigint?.toLowerCase() ?? "") + 1 || 2;
 			this._bigintDecoding = [ "bigint", "string" ].indexOf(options.decoding?.bigint?.toLowerCase() ?? "") + 1 || 1;
@@ -293,7 +294,14 @@
 					const length = this._v.getUint32(this._i);
 					this._i += 4;
 					for (let i = 0; i < length; i++) {
-						const key = this._loop();
+						let key;
+						if (this._binaryKeyDecoding && this._d[this._i] === 109) {
+							const keyLength = this._v.getUint32(this._i + 1);
+							this._i += 5;
+							key = this._binaryKeyDecoding === 2 ? this._latin(keyLength) : this._utf(keyLength);
+						} else {
+							key = this._loop();
+						}
 						obj[key] = this._loop();
 					}
 					return obj;
