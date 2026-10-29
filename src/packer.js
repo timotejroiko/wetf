@@ -539,6 +539,7 @@ class Packer {
 	 */
 	_notIgnoreOrNull(val) {
 		const type = typeof val;
+		if(type === "function") { return false; }
 		if(type === "undefined") {
 			if(this._undefinedEncoding === 2) {
 				return null;
