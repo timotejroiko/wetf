@@ -10,9 +10,7 @@ External Term Format, or ETF, is the binary serialization format used by Erlang 
 
 ETF has very loose definitions and rules for how data should be encoded between languages, especially since JavaScript and Erlang are vastly different, therefore **Wetf** is highly customizable and gives the user a lot of options for how the data should be encoded and decoded.
 
-In addition, **Wetf** is fast, [stupid fast](#benchmark), it was designed for absolute performance and tries to squeeze every inch of juice out of the JS engine.
-
-**Wetf** is pronounced "wet-the-fuck" and stands for "Wetf Es Truly Fast" (or "Wet Extra Terrestrial Format" if you prefer).
+In addition, **Wetf** is [very fast](#benchmark), it was designed for absolute performance and tries to squeeze every inch of juice out of the JS engine.
 
 ## Installation
 
@@ -140,6 +138,7 @@ All options are optional.
 |---|---|---|---|
 | poolSize | number | 1048576 | Initial size of the internal memory buffer in bytes |
 | useLegacyAtoms | boolean | false | If enabled, Atoms will be encoded using the legacy `ATOM_EXT` formats instead of the newer `ATOM_UTF8_EXT`. Legacy atoms are slightly faster but are limited to the latin1 character set |
+| cacheKeys | boolean | false | Cache repeated object keys for faster encoding |
 | compression | [Compression Method](#compression-method) | false | Enable data compression and specify the compression method |
 | encoding | [Encoding Options](#encoding-options) | {} | Customize encoding behavior |
 
@@ -161,7 +160,7 @@ This object controls the encoding behavior and determines which JavaScript data 
 
 | option | values | default | description |
 |---|---|---|---|
-| string | "binary", "string" | "string" | Whether strings should be encoded as `STRING_EXT` or `BINARY_EXT` |
+| string | "binary", "string", "list" | "string" | Encode strings as UTF-8 using `BINARY_EXT`, `STRING_EXT` or a proper nil-terminated `LIST_EXT` of byte values |
 | key | "binary", "string", "atom" | "atom" | Whether object keys should be encoded as `STRING_EXT`, `BINARY_EXT` or `ATOM_*_EXT` |
 | safeInt | "bigint", "float" | "bigint" | Whether integers between 32 and 53 bits should be encoded as `SMALL_BIG_EXT` or `NEW_FLOAT_EXT` |
 | safeBigInt | "number", "bigint" | "number" | Whether BigInts smaller than 32 bits should be encoded as `*_INTEGER_EXT` or `SMALL_BIG_EXT` |
@@ -172,9 +171,7 @@ This object controls the encoding behavior and determines which JavaScript data 
 | buffer | "binary", "bitbinary", "string" | "binary" | Whether Buffers and TypedArrays should be encoded as `BINARY_EXT`, `BIT_BINARY_EXT` or `STRING_EXT` |
 | array | "list", "improperlist", "tuple" | "tuple" | Whether Arrays should be encoded as a proper nil-terminated `LIST_EXT`, an improper `LIST_EXT` or a `*_TUPLE_EXT` |
 
-\* Ignored types will have their object keys deleted and their array indexes spliced from the final value.
-
-The [ETF specification](https://www.erlang.org/doc/apps/erts/erl_ext_dist.html#string_ext) limits `STRING_EXT` payloads to 65,535 bytes. This is a format constraint, not a JavaScript-specific limitation. The packer throws a `RangeError` when strings, object keys or byte views configured to use `"string"` encoding exceed it. Use `"binary"` encoding for larger payloads.
+\* Ignored values have their object properties omitted and array elements removed from the serialized output. If the top-level value is ignored, `pack()` encodes `NIL_EXT` (the empty list).
 
 ### Packer Limitations
 
@@ -182,7 +179,7 @@ The Packer currently cannot create the following ETF types:
 
 `Distribution Header`, `ATOM_CACHE_REF`, `FLOAT_EXT`, `PORT_EXT`, `NEW_PORT_EXT`, `V4_PORT_EXT`, `PID_EXT`, `NEW_PID_EXT`, `REFERENCE_EXT`, `NEW_REFERENCE_EXT`, `NEWER_REFERENCE_EXT`, `FUN_EXT`, `NEW_FUN_EXT`, `EXPORT_EXT`
 
-And does not support encoding the following JS objects:
+The following JS objects are always ignored using the omission rules above, rather than encoded as empty maps. Their contents are not serialized:
 
 `Map`, `Set`, `Date`, `Error`, `ArrayBuffer`, `Function`, `RegExp`
 
@@ -192,9 +189,11 @@ The following JS objects may have special rules and behavior:
 
 `Symbol`s are stringified to `Symbol(description)` and encoded as strings.
 
-`ArrayBuffer` is not directly supported. Buffer, TypedArrays and DataView are encoded as raw bytes, respecting their byte offset and byte length.
+Buffer, TypedArrays and DataView are encoded as raw bytes, respecting their byte offset and byte length.
 
-Values encoded as `STRING_EXT` are limited to 65,535 bytes according to the [ETF specification](https://www.erlang.org/doc/apps/erts/erl_ext_dist.html#string_ext) and the Packer will throw a RangeError if exceeded. For longer strings, `BINARY_EXT` should be used instead.
+Objects are encoded using their own enumerable properties. Replacement functions like `toJSON` are not supported.
+
+Values encoded as `STRING_EXT` are limited to 65,535 bytes according to the [ETF specification](https://www.erlang.org/doc/apps/erts/erl_ext_dist.html#string_ext) and the Packer will throw a RangeError if exceeded. For longer strings, use `encoding.string: "binary"` or `encoding.string: "list"`.
 
 Values encoded as `ATOM`s are not subject to Erlang's hard limit of 255 characters per atom, instead they follow the wire format limit of 65,535 bytes. The Packer allows these atoms to be encoded, but atoms larger than 255 characters may fail to decode in a real Erlang application.
 
@@ -297,7 +296,7 @@ Support for these types might be added in the future, feel free to open a featur
 
 ## Benchmark
 
-An ungodly amount of JS abuse and trickery went into creating **Wetf** in order to make it truly stupid fast. In this benchmark, several libraries were tested by measuring the time taken to encode the same sample object 1 million times and then the time taken to decode the result another 1 million times. Here are the results:
+A decent amount of JS abuse and trickery went into creating **Wetf** in order to make it truly fast. In this benchmark, several libraries were tested by measuring the time taken to encode the same sample object 1 million times and then the time taken to decode the result another 1 million times. Here are the results:
 
 ### Sample object
 
