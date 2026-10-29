@@ -116,6 +116,7 @@ class Packer {
 		switch(type) {
 			case "undefined": {
 				if(this._undefinedEncoding === 3) { break; }
+				if(this._undefinedEncoding === 2) { this._loop(null); break; }
 				this._expand(11);
 				this._u[this._i] = this._useLegacyAtoms ? 115 : 119;
 				this._u[this._i + 1] = 9;
@@ -216,26 +217,27 @@ class Packer {
 					}
 				} else if(Number.isNaN(obj)) {
 					if(this._nanEncoding === 3) { break; }
-					this._expand(4);
+					if(this._nanEncoding === 2) { this._loop(null); break; }
+					this._expand(5);
 					this._u[this._i] = this._useLegacyAtoms ? 115 : 119;
-					this._u[this._i + 1] = 110;
-					this._u[this._i + 2] = 97;
-					this._u[this._i + 3] = 110;
-					this._i += 4;
+					this._v.setUint32(this._i + 1, 57565550);
+					this._i += 5;
 				} else {
 					if(this._infinityEncoding === 3) { break; }
-					this._expand(18);
+					if(this._infinityEncoding === 2) { this._loop(null); break; }
+					this._expand(19);
 					this._u[this._i] = this._useLegacyAtoms ? 115 : 119;
+					this._u[this._i + 1] = 17;
 					if(obj < 0) {
-						this._v.setUint32(this._i + 1, 1852139361);
+						this._v.setUint32(this._i + 2, 1852139361);
 					} else {
-						this._v.setUint32(this._i + 1, 1886352233);
+						this._v.setUint32(this._i + 2, 1886352233);
 					}
-					this._u[this._i + 5] = 95;
-					this._v.setUint32(this._i + 6, 1769366879);
-					this._v.setUint32(this._i + 10, 1768842857);
-					this._v.setUint32(this._i + 14, 1852404857);
-					this._i += 18;
+					this._v.setUint32(this._i + 6, 1953068645);
+					this._v.setUint32(this._i + 10, 1600745062);
+					this._v.setUint32(this._i + 14, 1768843636);
+					this._u[this._i + 18] = 121;
+					this._i += 19;
 				}
 				break;
 			}
