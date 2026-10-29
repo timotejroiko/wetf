@@ -3,6 +3,7 @@ class Packer {
 	 * 
 	 * @param {{
 	 *      poolSize?: number;
+	 *      cacheKeys?: boolean;
 	 *      compression?: boolean | "zlib" | "compressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>);
 	 *      encoding?: {
 	 *          string?: "binary" | "string";
@@ -33,6 +34,7 @@ class Packer {
 		/** @private */ this._nanEncoding = ["atom", "null", "ignore"].indexOf(options.encoding?.nan?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._arrayEncoding = ["list", "improperlist", "tuple"].indexOf(options.encoding?.array?.toLowerCase() ?? "") + 1 || 3;
 		/** @private */ this._useLegacyAtoms = Boolean(options.useLegacyAtoms);
+		/** @private @type {Map<string, Uint8Array> | null} */ this._keyCache = options.cacheKeys ?? true ? new Map() : null;
 		/** @private */ this._poolSize = Number(options.poolSize) || 1024 * 1024;
 		/** @private */ this._u = new Uint8Array(this._poolSize);
 		/** @private */ this._v = new DataView(this._u.buffer);
@@ -44,7 +46,7 @@ class Packer {
 			/** @private */ this._b = Buffer.from(this._u.buffer);
 			// @ts-expect-error this._b will never be null here
 			/** @private */ this._e = (/** @type {string} */ string, /** @type {number} */ index) => this._b.write(string, index);
-			/** @private */ this._T = 32; // buffer.write is super fast
+			/** @private */ this._T = typeof process?.versions?.bun === "string" ? 32 : 16;
 			if(this._compressor === true) { this._compressor = "zlib"; }
 		} else {
 			const encoder = new TextEncoder();
@@ -55,7 +57,7 @@ class Packer {
 			if(typeof navigator === "object") {
 				const agent = navigator.userAgent;
 				if(agent.includes("Firefox")) { this._T = 128; } // firefox is slower at manual encoding
-				else if(agent.includes("Chrome")) { this._T = 540; } // manual encoding is super fast in chrome
+				else if(agent.includes("Chrome")) { this._T = 384; } // manual encoding is super fast in chrome
 			}
 		}
 
@@ -488,7 +490,14 @@ class Packer {
 							}
 						}
 						const keyLength = key.length;
-						if(this._keyEncoding === 1 && this._useLegacyAtoms) {
+						const latin1 = this._keyEncoding === 1 && this._useLegacyAtoms;
+						const cache = this._keyCache && keyLength > (latin1 ? 8 : 4) ? this._keyCache : null;
+						const cached = cache && cache.get(key);
+						if(cached) {
+							this._expand(cached.length);
+							this._u.set(cached, this._i);
+							this._i += cached.length;
+						} else if(latin1) {
 							if(keyLength > 65535) { throw new RangeError("Atom key exceeds 65535 bytes"); }
 							const size = keyLength < 256 ? 1 : 2;
 							this._expand(keyLength + size + 1);
@@ -500,9 +509,14 @@ class Packer {
 								this._v.setUint16(this._i, keyLength);
 								this._i += 2;
 							}
-							for(let k = 0; k < keyLength; k++) {
-								this._u[this._i++] = key.charCodeAt(k);
+							if(keyLength < this._T || !this._b) {
+								for(let k = 0; k < keyLength; k++) {
+									this._u[this._i++] = key.charCodeAt(k);
+								}
+							} else {
+								this._i += this._b.write(key, this._i, "latin1");
 							}
+							if(cache) { cache.set(key, this._u.slice(this._i - keyLength - size - 1, this._i)); }
 						} else {
 							const possibleLength = keyLength * 3;
 							let size = 0;
@@ -532,6 +546,7 @@ class Packer {
 							} else {
 								this._v.setUint32(temp_i, written);
 							}
+							if(cache) { cache.set(key, this._u.slice(this._i - written - size - 1, this._i)); }
 						}
 						this._loop(val);
 					}

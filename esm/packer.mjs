@@ -12,6 +12,7 @@ export class Packer {
 		this._nanEncoding = [ "atom", "null", "ignore" ].indexOf(options.encoding?.nan?.toLowerCase() ?? "") + 1 || 1;
 		this._arrayEncoding = [ "list", "improperlist", "tuple" ].indexOf(options.encoding?.array?.toLowerCase() ?? "") + 1 || 3;
 		this._useLegacyAtoms = Boolean(options.useLegacyAtoms);
+		this._keyCache = options.cacheKeys ?? true ? new Map() : null;
 		this._poolSize = Number(options.poolSize) || 1024 * 1024;
 		this._u = new Uint8Array(this._poolSize);
 		this._v = new DataView(this._u.buffer);
@@ -21,7 +22,7 @@ export class Packer {
 		if (typeof process !== "undefined" && typeof process?.versions?.node === "string") {
 			this._b = Buffer.from(this._u.buffer);
 			this._e = (string, index) => this._b.write(string, index);
-			this._T = 32;
+			this._T = typeof process?.versions?.bun === "string" ? 32 : 16;
 			if (this._compressor === true) {
 				this._compressor = "zlib";
 			}
@@ -38,7 +39,7 @@ export class Packer {
 				if (agent.includes("Firefox")) {
 					this._T = 128;
 				} else if (agent.includes("Chrome")) {
-					this._T = 540;
+					this._T = 384;
 				}
 			}
 		}
@@ -500,7 +501,14 @@ export class Packer {
 							}
 						}
 						const keyLength = key.length;
-						if (this._keyEncoding === 1 && this._useLegacyAtoms) {
+						const latin1 = this._keyEncoding === 1 && this._useLegacyAtoms;
+						const cache = this._keyCache && keyLength > (latin1 ? 8 : 4) ? this._keyCache : null;
+						const cached = cache && cache.get(key);
+						if (cached) {
+							this._expand(cached.length);
+							this._u.set(cached, this._i);
+							this._i += cached.length;
+						} else if (latin1) {
 							if (keyLength > 65535) {
 								throw new RangeError("Atom key exceeds 65535 bytes");
 							}
@@ -514,8 +522,15 @@ export class Packer {
 								this._v.setUint16(this._i, keyLength);
 								this._i += 2;
 							}
-							for (let k = 0; k < keyLength; k++) {
-								this._u[this._i++] = key.charCodeAt(k);
+							if (keyLength < this._T || !this._b) {
+								for (let k = 0; k < keyLength; k++) {
+									this._u[this._i++] = key.charCodeAt(k);
+								}
+							} else {
+								this._i += this._b.write(key, this._i, "latin1");
+							}
+							if (cache) {
+								cache.set(key, this._u.slice(this._i - keyLength - size - 1, this._i));
 							}
 						} else {
 							const possibleLength = keyLength * 3;
@@ -547,6 +562,9 @@ export class Packer {
 								this._u[temp_i + 1] = written & 255;
 							} else {
 								this._v.setUint32(temp_i, written);
+							}
+							if (cache) {
+								cache.set(key, this._u.slice(this._i - written - size - 1, this._i));
 							}
 						}
 						this._loop(val);
