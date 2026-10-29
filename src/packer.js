@@ -159,6 +159,7 @@ class Packer {
 					const temp_i = this._i;
 					this._i += 2;
 					const written = this._utf(obj);
+					if(written > 65535) { throw new RangeError("STRING_EXT payload exceeds 65535 bytes"); }
 					this._u[temp_i] = written >> 8;
 					this._u[temp_i + 1] = written & 255;
 				}
@@ -436,6 +437,7 @@ class Packer {
 					const length = data.length;
 					let isBitBinary = false;
 					if(this._bufferEncoding === 3) {
+						if(length > 65535) { throw new RangeError("STRING_EXT payload exceeds 65535 bytes"); }
 						this._expand(length + 3);
 						this._u[this._i] = 107;
 						this._u[this._i + 1] = length >> 8;
@@ -519,6 +521,7 @@ class Packer {
 							const temp_i = this._i + 1;
 							this._i += size + 1;
 							const written = this._utf(key);
+							if(this._keyEncoding === 3 && written > 65535) { throw new RangeError("STRING_EXT payload exceeds 65535 bytes"); }
 							if(size === 1) {
 								this._u[temp_i] = written;
 							} else if(size === 2) {
