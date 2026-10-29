@@ -31,9 +31,9 @@ declare class Unpacker {
     private _sb;
     private _b;
     private _i;
+    private _T;
     private _u;
     private _l;
-    private _T;
     private _atoms;
     private _atomKeys;
     private _atomTableLatin;

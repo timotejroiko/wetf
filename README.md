@@ -160,18 +160,16 @@ This object controls the encoding behavior and determines which JavaScript data 
 
 | option | values | default | description |
 |---|---|---|---|
-| string | "binary", "string", "list" | "string" | Encode strings as UTF-8 using `BINARY_EXT`, `STRING_EXT` or a proper nil-terminated `LIST_EXT` of byte values |
-| key | "binary", "string", "atom" | "atom" | Whether object keys should be encoded as `STRING_EXT`, `BINARY_EXT` or `ATOM_*_EXT` |
+| string | "binary", "string", "char-string", "char-list" | "binary" | Encode strings as UTF-8 `BINARY_EXT`, UTF-8 `STRING_EXT`, Latin-1 `STRING_EXT` or a proper `LIST_EXT` of Unicode code-points |
+| key | "binary", "string", "char-string", "atom" | "atom" | Encode object keys as UTF-8 `BINARY_EXT`, UTF-8 `STRING_EXT`, Latin-1 `STRING_EXT` or `ATOM_*_EXT` |
 | safeInt | "bigint", "float" | "bigint" | Whether integers between 32 and 53 bits should be encoded as `SMALL_BIG_EXT` or `NEW_FLOAT_EXT` |
 | safeBigInt | "number", "bigint" | "number" | Whether BigInts smaller than 32 bits should be encoded as `*_INTEGER_EXT` or `SMALL_BIG_EXT` |
 | null | "atom", "nil" | "atom" | Whether null should be encoded as the Atom `nil` or as `NIL_EXT` |
 | undefined | "atom", "null", "ignore" | "atom" | Whether undefined should be encoded as the Atom `undefined`, converted to null or ignored\* |
 | infinity | "atom", "null", "ignore" | "atom" | Whether Infinity should be encoded as the Atoms `positive_infinity` and `negative_infinity`, converted to `null` or ignored\* |
-| nan | "atom", "null", "ignore" | "atom" | Whether NaN should be encoded as the Atom `nan`, converted to `null` or ignored\* |
+| nan | "atom", "null", "ignore" | "atom" | Whether NaN should be encoded as the Atom `nan`, converted to `null` or ignored |
 | buffer | "binary", "bitbinary", "string" | "binary" | Whether Buffers and TypedArrays should be encoded as `BINARY_EXT`, `BIT_BINARY_EXT` or `STRING_EXT` |
 | array | "list", "improperlist", "tuple" | "tuple" | Whether Arrays should be encoded as a proper nil-terminated `LIST_EXT`, an improper `LIST_EXT` or a `*_TUPLE_EXT` |
-
-\* Ignored values have their object properties omitted and array elements removed from the serialized output. If the top-level value is ignored, `pack()` encodes `NIL_EXT` (the empty list).
 
 ### Packer Limitations
 
@@ -179,7 +177,7 @@ The Packer currently cannot create the following ETF types:
 
 `Distribution Header`, `ATOM_CACHE_REF`, `FLOAT_EXT`, `PORT_EXT`, `NEW_PORT_EXT`, `V4_PORT_EXT`, `PID_EXT`, `NEW_PID_EXT`, `REFERENCE_EXT`, `NEW_REFERENCE_EXT`, `NEWER_REFERENCE_EXT`, `FUN_EXT`, `NEW_FUN_EXT`, `EXPORT_EXT`
 
-The following JS objects are always ignored using the omission rules above, rather than encoded as empty maps. Their contents are not serialized:
+The following JS objects are always ignored and their contents are not serialized:
 
 `Map`, `Set`, `Date`, `Error`, `ArrayBuffer`, `Function`, `RegExp`
 
@@ -193,9 +191,11 @@ Buffer, TypedArrays and DataView are encoded as raw bytes, respecting their byte
 
 Objects are encoded using their own enumerable properties. Replacement functions like `toJSON` are not supported.
 
-Values encoded as `STRING_EXT` are limited to 65,535 bytes according to the [ETF specification](https://www.erlang.org/doc/apps/erts/erl_ext_dist.html#string_ext) and the Packer will throw a RangeError if exceeded. For longer strings, use `encoding.string: "binary"` or `encoding.string: "list"`.
+Values encoded as `STRING_EXT` are limited to 65,535 bytes according to the [ETF specification](https://www.erlang.org/doc/apps/erts/erl_ext_dist.html#string_ext) and the Packer will throw a RangeError if exceeded. For longer strings, use `BINARY_EXT` or `LIST_EXT`. Latin-1 `STRING_EXT` encodes code points in range 0-255 only, other values are truncated.
 
 Values encoded as `ATOM`s are not subject to Erlang's hard limit of 255 characters per atom, instead they follow the wire format limit of 65,535 bytes. The Packer allows these atoms to be encoded, but atoms larger than 255 characters may fail to decode in a real Erlang application.
+
+Ignored values have their object properties omitted and array elements removed from the serialized output. If the top-level value is ignored, `pack()` encodes `NIL_EXT` (the empty list).
 
 ## Unpacker
 

@@ -43,8 +43,8 @@ class Unpacker {
 		} else {
 			const utfDecoder = new TextDecoder("utf8", { ignoreBOM: true });
 			const latinDecoder = new TextDecoder("latin1");
-			/** @type {TextDecoder["decode"]} */ this._u = utfDecoder.decode.bind(utfDecoder);
-			/** @type {TextDecoder["decode"]} */ this._l = latinDecoder.decode.bind(latinDecoder);
+			/** @private @type {TextDecoder["decode"]} */ this._u = utfDecoder.decode.bind(utfDecoder);
+			/** @private @type {TextDecoder["decode"]} */ this._l = latinDecoder.decode.bind(latinDecoder);
 			this._T = 32;
 			if(typeof navigator === "object") {
 				const agent = navigator.userAgent;

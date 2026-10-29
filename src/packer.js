@@ -6,8 +6,8 @@ class Packer {
 	 *      cacheKeys?: boolean;
 	 *      compression?: boolean | "zlib" | "compressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>);
 	 *      encoding?: {
-	 *          string?: "binary" | "string" | "list";
-	 *          key?: "binary" | "string" | "atom";
+	 *          string?: "binary" | "string" | "char-string" | "char-list";
+	 *          key?: "binary" | "string" | "char-string" | "atom";
 	 *          safeInt?: "bigint" | "float";
 	 *          safeBigInt?: "number" | "bigint";
 	 *          null?: "atom" | "nil";
@@ -23,8 +23,8 @@ class Packer {
 	 */
 	constructor(options = {}) {
 		/** @private */ this._compressor = options.compression ?? false;
-		/** @private */ this._stringEncoding = ["string", "binary", "list"].indexOf(options.encoding?.string?.toLowerCase() ?? "") + 1 || 1;
-		/** @private */ this._keyEncoding = ["atom", "binary", "string"].indexOf(options.encoding?.key?.toLowerCase() ?? "") + 1 || 1;
+		/** @private */ this._stringEncoding = ["string", "binary", "char-string", "char-list"].indexOf(options.encoding?.string?.toLowerCase() ?? "") + 1 || 2;
+		/** @private */ this._keyEncoding = ["atom", "binary", "string", "char-string"].indexOf(options.encoding?.key?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._safeIntEncoding = ["bigint", "float"].indexOf(options.encoding?.safeInt?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._safeBigIntEncoding = ["number", "bigint"].indexOf(options.encoding?.safeBigInt?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._nullEncoding = ["atom", "nil"].indexOf(options.encoding?.null?.toLowerCase() ?? "") + 1 || 1;
@@ -159,19 +159,40 @@ class Packer {
 					const written = this._utf(obj);
 					this._v.setUint32(temp_i, written);
 				} else if(this._stringEncoding === 3) {
-					this._expand(obj.length * 6 + 6);
-					this._u[this._i++] = 108;
-					const temp_i = this._i;
-					this._i += 4;
-					const start = this._i;
-					const written = this._utf(obj);
-					this._v.setUint32(temp_i, written);
-					// Expand backwards in place so unread UTF-8 bytes are not overwritten.
-					for(let n = written - 1; n >= 0; n--) {
-						this._u[start + n * 2 + 1] = this._u[start + n];
-						this._u[start + n * 2] = 97;
+					if(obj.length > 65535) { throw new RangeError("STRING_EXT payload exceeds 65535 bytes"); }
+					this._expand(obj.length + 3);
+					this._u[this._i++] = 107;
+					this._v.setUint16(this._i, obj.length);
+					this._i += 2;
+					if(this._b) {
+						this._b.write(obj, this._i, obj.length, "latin1");
+						this._i += obj.length;
+					} else {
+						for(let n = 0; n < obj.length; n++) {
+							this._u[this._i++] = obj.charCodeAt(n);
+						}
 					}
-					this._i += written;
+				} else if(this._stringEncoding === 4) {
+					this._expand(obj.length * 5 + 6);
+					this._u[this._i++] = 108;
+					const index = this._i;
+					this._i += 4;
+					let length = 0;
+					for(let n = 0; n < obj.length; n++) {
+						let point = obj.codePointAt(n);
+						if(point <= 255) {
+							this._u[this._i++] = 97;
+							this._u[this._i++] = point;
+						} else {
+							if(point >= 55296 && point <= 57343) { point = 65533; }
+							this._u[this._i++] = 98;
+							this._v.setUint32(this._i, point);
+							this._i += 4;
+							if(point > 65535) { n++; }
+						}
+						length++;
+					}
+					this._v.setUint32(index, length);
 					this._u[this._i++] = 106;
 				} else {
 					this._expand(obj.length * 3 + 3);
@@ -500,7 +521,7 @@ class Packer {
 						const val = obj[key];
 						const start = this._i - this._o;
 						const keyLength = key.length;
-						const latin1 = this._keyEncoding === 1 && this._useLegacyAtoms;
+						const latin1 = this._keyEncoding === 4 || this._keyEncoding === 1 && this._useLegacyAtoms;
 						const cache = this._keyCache && keyLength > (latin1 ? 8 : 4) ? this._keyCache : null;
 						const cached = cache && cache.get(key);
 						if(cached) {
@@ -508,14 +529,14 @@ class Packer {
 							this._u.set(cached, this._i);
 							this._i += cached.length;
 						} else if(latin1) {
-							if(keyLength > 65535) { throw new RangeError("Atom key exceeds 65535 bytes"); }
-							const size = keyLength < 256 ? 1 : 2;
+							if(keyLength > 65535) { throw new RangeError(this._keyEncoding === 4 ? "STRING_EXT payload exceeds 65535 bytes" : "Atom key exceeds 65535 bytes"); }
+							const size = this._keyEncoding === 4 || keyLength >= 256 ? 2 : 1;
 							this._expand(keyLength + size + 1);
 							if(size === 1) {
 								this._u[this._i++] = 115;
 								this._u[this._i++] = keyLength;
 							} else {
-								this._u[this._i++] = 100;
+								this._u[this._i++] = this._keyEncoding === 4 ? 107 : 100;
 								this._v.setUint16(this._i, keyLength);
 								this._i += 2;
 							}
