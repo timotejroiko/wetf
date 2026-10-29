@@ -43,7 +43,6 @@ declare class Packer {
     private _z;
     pack(data: any): Uint8Array | Promise<Uint8Array>;
     private _loop;
-    private _notIgnoreOrNull;
     private _expand;
     private _utf;
     private _compressorOut;

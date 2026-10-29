@@ -102,11 +102,13 @@ class Packer {
 		this._expand(10);
 		if(this._z) {
 			this._loop(data);
+			if(this._i === this._o) { this._u[this._i++] = 106; }
 			const raw = this._u.subarray(this._o, this._i);
 			return this._z(raw);
 		}
 		this._u[this._i++] = 131;
 		this._loop(data);
+		if(this._i - this._o === 1) { this._u[this._i++] = 106; }
 		return this._u.subarray(this._o, this._i);
 	}
 
@@ -420,17 +422,9 @@ class Packer {
 							}
 						}
 						for(let i = 0; i < obj.length; i++) {
-							let val = obj[i];
-							const checkVal = this._notIgnoreOrNull(val);
-							if(!checkVal) {
-								if(checkVal === null) {
-									val = null;
-								} else {
-									size--;
-									continue;
-								}
-							}
-							this._loop(val);
+							const start = this._i - this._o;
+							this._loop(obj[i]);
+							if(this._i - this._o === start) { size--; }
 						}
 						if(r !== this._r) {
 							index -= this._r;
@@ -485,6 +479,15 @@ class Packer {
 					}
 					this._i += length;
 				} else {
+					switch(Object.prototype.toString.call(obj)) {
+						case "[object Map]":
+						case "[object Set]":
+						case "[object Date]":
+						case "[object Error]":
+						case "[object ArrayBuffer]":
+						case "[object RegExp]":
+							return;
+					}
 					this._expand(6);
 					this._u[this._i++] = 116;
 					const keys = Object.keys(obj);
@@ -494,16 +497,8 @@ class Packer {
 					this._i += 4;
 					for(let n = 0; n < keys.length; n++) {
 						const key = keys[n];
-						let val = obj[key];
-						const checkVal = this._notIgnoreOrNull(val);
-						if(!checkVal) {
-							if(checkVal === null) {
-								val = null;
-							} else {
-								length--;
-								continue;
-							}
-						}
+						const val = obj[key];
+						const start = this._i - this._o;
 						const keyLength = key.length;
 						const latin1 = this._keyEncoding === 1 && this._useLegacyAtoms;
 						const cache = this._keyCache && keyLength > (latin1 ? 8 : 4) ? this._keyCache : null;
@@ -563,7 +558,12 @@ class Packer {
 							}
 							if(cache) { cache.set(key, this._u.slice(this._i - written - size - 1, this._i)); }
 						}
+						const valueStart = this._i - this._o;
 						this._loop(val);
+						if(this._i - this._o === valueStart) {
+							this._i = this._o + start;
+							length--;
+						}
 					}
 					if(r !== this._r) {
 						index -= this._r;
@@ -573,37 +573,6 @@ class Packer {
 				break;
 			}
 		}
-	}
-
-	/**
-	 * @private
-	 * @param {*} val 
-	 * @returns 
-	 */
-	_notIgnoreOrNull(val) {
-		const type = typeof val;
-		if(type === "function") { return false; }
-		if(type === "undefined") {
-			if(this._undefinedEncoding === 2) {
-				return null;
-			} else if(this._undefinedEncoding === 3) {
-				return false;
-			}
-		}
-		if(type === "number" && !Number.isFinite(val)) {
-			if(Number.isNaN(val)) {
-				if(this._nanEncoding === 2) {
-					return null;
-				} else if(this._nanEncoding === 3) {
-					return false;
-				}
-			} else if(this._infinityEncoding === 2) {
-				return null;
-			} else if(this._infinityEncoding === 3) {
-				return false;
-			}
-		}
-		return true;
 	}
 
 	/**
