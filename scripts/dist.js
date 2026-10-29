@@ -37,7 +37,7 @@ function makeUMD() {
 	let combined = "";
 	src.forEach(({ name, content }) => {
 		const modified = content.slice(0, content.indexOf("module.exports"));
-		const code = `o.${capitalize(name)} = ${modified}`;
+		const code = `${modified}\no.${capitalize(name)} = ${capitalize(name)};`;
 		combined += `${code}\n`;
 		writeFileSync(`./umd/${name}.js`, uglify.minify(umd.replace("%", code), options).code);
 	});

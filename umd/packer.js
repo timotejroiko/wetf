@@ -4,7 +4,7 @@
 })(this, function(exports) {
 	"use strict";
 	const o = exports.Wetf || (exports.Wetf = {});
-	o.Packer = class Packer {
+	class Packer {
 		constructor(options = {}) {
 			this._compressor = options.compression ?? false;
 			this._stringEncoding = [ "string", "binary" ].indexOf(options.encoding?.string?.toLowerCase() ?? "") + 1 || 1;
@@ -682,7 +682,8 @@
 			}
 			return out;
 		}
-	};
+	}
 	Packer.Packer = Packer;
 	Packer.default = Packer;
+	o.Packer = Packer;
 });

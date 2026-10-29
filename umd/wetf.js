@@ -4,7 +4,7 @@
 })(this, function(exports) {
 	"use strict";
 	const o = exports.Wetf || (exports.Wetf = {});
-	o.Packer = class Packer {
+	class Packer {
 		constructor(options = {}) {
 			this._compressor = options.compression ?? false;
 			this._stringEncoding = [ "string", "binary" ].indexOf(options.encoding?.string?.toLowerCase() ?? "") + 1 || 1;
@@ -682,10 +682,11 @@
 			}
 			return out;
 		}
-	};
+	}
 	Packer.Packer = Packer;
 	Packer.default = Packer;
-	o.Unpacker = class Unpacker {
+	o.Packer = Packer;
+	class Unpacker {
 		constructor(options = {}) {
 			this._decompressor = options.decompression;
 			this._nilDecoding = [ "null", "array" ].indexOf(options.decoding?.nil?.toLowerCase() ?? "") + 1 || 1;
@@ -1134,7 +1135,8 @@
 			}
 			return out;
 		}
-	};
+	}
 	Unpacker.Unpacker = Unpacker;
 	Unpacker.default = Unpacker;
+	o.Unpacker = Unpacker;
 });
