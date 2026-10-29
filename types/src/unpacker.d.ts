@@ -12,6 +12,7 @@ declare class Unpacker {
             bigint?: "bigint" | "string";
         };
         atomTable?: Record<string, any>;
+        atomKeyTable?: Record<string, any>;
         atomRegistration?: boolean;
     });
     private _decompressor;
@@ -34,8 +35,11 @@ declare class Unpacker {
     private _l;
     private _T;
     private _atoms;
+    private _atomKeys;
     private _atomTableLatin;
     private _atomTableUtf;
+    private _atomKeyTableLatin;
+    private _atomKeyTableUtf;
     unpack(data: Buffer | Uint8Array): any;
     private _loop;
     private _resolveAtom;

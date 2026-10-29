@@ -30,7 +30,9 @@
 					this._decompressor = "zlib";
 				}
 			} else {
-				const utfDecoder = new TextDecoder("utf8");
+				const utfDecoder = new TextDecoder("utf8", {
+					ignoreBOM: true
+				});
 				const latinDecoder = new TextDecoder("latin1");
 				this._u = utfDecoder.decode.bind(utfDecoder);
 				this._l = latinDecoder.decode.bind(latinDecoder);
@@ -58,20 +60,43 @@
 				positive_infinity: Infinity,
 				negative_infinity: -Infinity
 			};
-			this._atomTableLatin = [];
-			this._atomTableUtf = [];
+			this._atomKeys = options.atomKeyTable ?? {};
+			this._atomTableLatin = [ "" ];
+			this._atomTableUtf = [ "" ];
+			this._atomKeyTableLatin = [ "" ];
+			this._atomKeyTableUtf = [ "" ];
 			const encoder = new TextEncoder();
-			for (const [ key, val ] of Object.entries(this._atoms)) {
-				const codes = encoder.encode(key);
-				let t1 = this._atomTableLatin[key.length] ??= [];
-				let t2 = this._atomTableUtf[codes.length] ??= [];
-				for (let i = 0; i < key.length; i++) {
-					const char1 = key.charCodeAt(i);
-					t1 = t1[char1] ??= i === key.length - 1 ? val : [];
+			for (const isKey of [ false, true ]) {
+				const atoms = isKey ? this._atomKeys : this._atoms;
+				const latin = isKey ? this._atomKeyTableLatin : this._atomTableLatin;
+				const utf = isKey ? this._atomKeyTableUtf : this._atomTableUtf;
+				for (const [ key, val ] of Object.entries(atoms)) {
+					if (key.length === 0) {
+						latin[0] = utf[0] = val;
+						continue;
+					}
+					const codes = encoder.encode(key);
+					let t1 = latin[key.length] ??= [];
+					let t2 = utf[codes.length] ??= [];
+					for (let i = 0; i < key.length; i++) {
+						const char1 = key.charCodeAt(i);
+						t1 = t1[char1] ??= i === key.length - 1 ? val : [];
+					}
+					for (let i = 0; i < codes.length; i++) {
+						const char2 = codes[i];
+						t2 = t2[char2] ??= i === codes.length - 1 ? val : [];
+					}
 				}
-				for (let i = 0; i < codes.length; i++) {
-					const char2 = codes[i];
-					t2 = t2[char2] ??= i === codes.length - 1 ? val : [];
+				const t1 = latin[1] ??= [];
+				const t2 = utf[1] ??= [];
+				for (let i = 0; i < 256; i++) {
+					const char = String.fromCharCode(i);
+					if (!(i in t1)) {
+						t1[i] = char;
+					}
+					if (!(i in t2)) {
+						t2[i] = char;
+					}
 				}
 			}
 		}
@@ -312,12 +337,20 @@
 					this._i += 4;
 					for (let i = 0; i < length; i++) {
 						let key;
-						if (this._binaryKeyDecoding && this._d[this._i] === 109) {
+						const keyType = this._d[this._i];
+						if (this._binaryKeyDecoding && keyType === 109) {
 							const keyLength = this._v.getUint32(this._i + 1);
 							this._i += 5;
 							key = this._binaryKeyDecoding === 2 ? this._latin(keyLength) : this._utf(keyLength);
 						} else {
-							key = this._loop();
+							if (keyType === 100 || keyType === 115 || keyType === 118 || keyType === 119) {
+								const wide = keyType === 100 || keyType === 118;
+								const keyLength = wide ? (this._d[this._i + 1] << 8) + this._d[this._i + 2] : this._d[this._i + 1];
+								this._i += wide ? 3 : 2;
+								key = this._resolveAtom(keyLength, keyType >= 118, true);
+							} else {
+								key = this._loop();
+							}
 							if (typeof key !== "string" && typeof key !== "symbol") {
 								key = String(key);
 							}
@@ -338,31 +371,34 @@
 			}
 			throw new Error(`Unexpected byte: ${type}`);
 		}
-		_resolveAtom(length, utf) {
-			const r = utf ? this._atomTableUtf : this._atomTableLatin;
+		_resolveAtom(length, utf, key = false) {
+			const r = key ? utf ? this._atomKeyTableUtf : this._atomKeyTableLatin : utf ? this._atomTableUtf : this._atomTableLatin;
+			if (length === 1) {
+				return r[1][this._d[this._i++]];
+			}
 			if (length in r) {
 				let t = r[length];
 				let i = this._i;
-				for (let n = 0; n < length; n++) {
+				let n = 0;
+				for (;n < length; n++) {
 					const v = this._d[i++];
-					if (v in t) {
-						if (n === length - 1) {
-							this._i += length;
-							return t[v];
-						}
-						t = t[v];
-					} else {
+					if (!(v in t)) {
 						break;
 					}
+					t = t[v];
+				}
+				if (n === length) {
+					this._i += length;
+					return t;
 				}
 			}
 			if (this._atomRegistration) {
-				return this._registerAtom(length, utf);
+				return this._registerAtom(length, utf, key);
 			}
 			return utf ? this._utf(length) : this._latin(length);
 		}
-		_registerAtom(length, utf) {
-			const r = utf ? this._atomTableUtf : this._atomTableLatin;
+		_registerAtom(length, utf, key = false) {
+			const r = key ? utf ? this._atomKeyTableUtf : this._atomKeyTableLatin : utf ? this._atomTableUtf : this._atomTableLatin;
 			if (!(length in r)) {
 				r[length] = [];
 			}
@@ -378,7 +414,16 @@
 					t = t[v] = [];
 				}
 			}
-			this._atoms[t] = t;
+			if (key && t === "__proto__") {
+				Object.defineProperty(this._atomKeys, t, {
+					value: t,
+					writable: true,
+					enumerable: true,
+					configurable: true
+				});
+			} else {
+				(key ? this._atomKeys : this._atoms)[t] = t;
+			}
 			return t;
 		}
 		_utf(length) {
