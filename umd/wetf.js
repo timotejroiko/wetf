@@ -67,7 +67,10 @@
 					const fn = this._compressor;
 					this._z = raw => {
 						const comp = fn(raw);
-						if (comp instanceof Promise) {
+						if ("then" in comp) {
+							if (typeof comp.then !== "function") {
+								throw new TypeError("Custom compressor returned a non-callable then");
+							}
 							return comp.then(c => this._compressorOut(c, raw.length));
 						}
 						return this._compressorOut(comp, raw.length);
@@ -811,7 +814,10 @@
 					});
 				} else if (typeof this._decompressor === "function") {
 					const decomp = this._decompressor(raw);
-					if (decomp instanceof Promise) {
+					if ("then" in decomp) {
+						if (typeof decomp.then !== "function") {
+							throw new TypeError("Custom decompressor returned a non-callable then");
+						}
 						return decomp.then(d => {
 							if (d.length !== size) {
 								throw new RangeError("Decompressed size does not match ETF header");

@@ -79,7 +79,8 @@ class Packer {
 				const fn = this._compressor;
 				this._z = (/** @type {Uint8Array} */ raw) => {
 					const comp = fn(raw);
-					if(comp instanceof Promise) {
+					if("then" in comp) {
+						if(typeof comp.then !== "function") { throw new TypeError("Custom compressor returned a non-callable then"); }
 						return comp.then(c => this._compressorOut(c, raw.length));
 					}
 					return this._compressorOut(comp, raw.length);

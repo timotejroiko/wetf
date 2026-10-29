@@ -132,7 +132,8 @@ class Unpacker {
 				});
 			} else if(typeof this._decompressor === "function") {
 				const decomp = this._decompressor(raw);
-				if(decomp instanceof Promise) {
+				if("then" in decomp) {
+					if(typeof decomp.then !== "function") { throw new TypeError("Custom decompressor returned a non-callable then"); }
 					return decomp.then(d => {
 						if(d.length !== size) { throw new RangeError("Decompressed size does not match ETF header"); }
 						return this.unpack(d);
