@@ -65,7 +65,7 @@ class Packer {
 				const zlib = typeof process?.getBuiltinModule === "function" ? process.getBuiltinModule("node:zlib") : require("node:zlib");
 				/** @private */ this._z = (/** @type {Uint8Array} */ raw) => {
 					const comp = zlib.deflateSync(raw);
-					return this._compressorOut(comp);
+					return this._compressorOut(comp, raw.length);
 				};
 			} else if(this._compressor === "compressionstream") {
 				this._z = (/** @type {Uint8Array} */ raw) => {
@@ -73,16 +73,16 @@ class Packer {
 					const reader = compression.readable.getReader();
 					const writer = compression.writable.getWriter();
 					writer.ready.then(() => writer.write(raw)).then(() => writer.ready).then(() => writer.close());
-					return this._compressorStreamOut(reader);
+					return this._compressorStreamOut(reader, raw.length);
 				};
 			} else if(typeof this._compressor === "function") {
 				const fn = this._compressor;
 				this._z = (/** @type {Uint8Array} */ raw) => {
 					const comp = fn(raw);
 					if(comp instanceof Promise) {
-						return comp.then(this._compressorOut);
+						return comp.then(c => this._compressorOut(c, raw.length));
 					}
-					return this._compressorOut(comp);
+					return this._compressorOut(comp, raw.length);
 				};
 			}
 		}
@@ -639,17 +639,18 @@ class Packer {
 	/**
 	 * @private
 	 * @param {Uint8Array | Buffer} comp 
+	 * @param {number} rawSize Uncompressed ETF payload size, excluding the version byte.
 	 */
-	_compressorOut(comp) {
+	_compressorOut(comp, rawSize) {
 		const size = comp.length;
 
 		const out = new Uint8Array(size + 6);
 		out[0] = 131;
 		out[1] = 80;
-		out[2] = size >> 24;
-		out[3] = (size >> 16) & 255;
-		out[4] = (size >> 8) & 255;
-		out[5] = size & 255;
+		out[2] = rawSize >> 24;
+		out[3] = (rawSize >> 16) & 255;
+		out[4] = (rawSize >> 8) & 255;
+		out[5] = rawSize & 255;
 		out.set(comp, 6);
 
 		return out;
@@ -658,8 +659,9 @@ class Packer {
 	/**
 	 * @private
 	 * @param {ReadableStreamDefaultReader} reader 
+	 * @param {number} rawSize Uncompressed ETF payload size, excluding the version byte.
 	 */
-	async _compressorStreamOut(reader) {
+	async _compressorStreamOut(reader, rawSize) {
 		const chunks = [];
 		let size = 0;
 		while(true) {
@@ -673,10 +675,10 @@ class Packer {
 		const out = new Uint8Array(size + 6);
 		out[0] = 131;
 		out[1] = 80;
-		out[2] = size >> 24;
-		out[3] = (size >> 16) & 255;
-		out[4] = (size >> 8) & 255;
-		out[5] = size & 255;
+		out[2] = rawSize >> 24;
+		out[3] = (rawSize >> 16) & 255;
+		out[4] = (rawSize >> 8) & 255;
+		out[5] = rawSize & 255;
 		let n = 6;
 		for(let i = 0; i < chunks.length; i++) {
 			const c = chunks[i];

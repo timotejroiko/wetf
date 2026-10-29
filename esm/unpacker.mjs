@@ -72,22 +72,38 @@ export class Unpacker {
 	unpack(data) {
 		const i = data[0] === 131 ? 1 : 0;
 		if (data[i] === 80) {
-			const size = (data[i + 1] << 24) + (data[i + 2] << 16) + (data[i + 3] << 8) + data[i + 4];
-			const raw = data.subarray(i + 5, i + 5 + size);
+			const size = data[i + 1] * 16777216 + (data[i + 2] << 16) + (data[i + 3] << 8) + data[i + 4];
+			const raw = data.subarray(i + 5);
 			if (this._decompressor === "zlib") {
 				const zlib = typeof process?.getBuiltinModule === "function" ? process.getBuiltinModule("node:zlib") : require("node:zlib");
 				const decomp = zlib.inflateSync(raw);
+				if (decomp.length !== size) {
+					throw new RangeError("Decompressed size does not match ETF header");
+				}
 				return this.unpack(decomp);
 			} else if (this._decompressor === "decompressionstream") {
 				const decompression = new DecompressionStream("deflate");
 				const reader = decompression.readable.getReader();
 				const writer = decompression.writable.getWriter();
 				writer.ready.then(() => writer.write(raw)).then(() => writer.ready).then(() => writer.close());
-				return this._decompressorStreamOut(reader).then(d => this.unpack(d));
+				return this._decompressorStreamOut(reader).then(d => {
+					if (d.length !== size) {
+						throw new RangeError("Decompressed size does not match ETF header");
+					}
+					return this.unpack(d);
+				});
 			} else if (typeof this._decompressor === "function") {
 				const decomp = this._decompressor(raw);
 				if (decomp instanceof Promise) {
-					return decomp.then(d => this.unpack(d));
+					return decomp.then(d => {
+						if (d.length !== size) {
+							throw new RangeError("Decompressed size does not match ETF header");
+						}
+						return this.unpack(d);
+					});
+				}
+				if (decomp.length !== size) {
+					throw new RangeError("Decompressed size does not match ETF header");
 				}
 				return this.unpack(decomp);
 			}
