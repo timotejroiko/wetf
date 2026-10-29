@@ -488,13 +488,18 @@ class Packer {
 							}
 						}
 						const keyLength = key.length;
-						if(this._keyEncoding === 1 && keyLength > 255) {
-							throw new RangeError("Atom key exceeds 255 UTF-16 code units");
-						}
 						if(this._keyEncoding === 1 && this._useLegacyAtoms) {
-							this._expand(keyLength + 2);
-							this._u[this._i++] = 115;
-							this._u[this._i++] = keyLength;
+							if(keyLength > 65535) { throw new RangeError("Atom key exceeds 65535 bytes"); }
+							const size = keyLength < 256 ? 1 : 2;
+							this._expand(keyLength + size + 1);
+							if(size === 1) {
+								this._u[this._i++] = 115;
+								this._u[this._i++] = keyLength;
+							} else {
+								this._u[this._i++] = 100;
+								this._v.setUint16(this._i, keyLength);
+								this._i += 2;
+							}
 							for(let k = 0; k < keyLength; k++) {
 								this._u[this._i++] = key.charCodeAt(k);
 							}
@@ -518,10 +523,10 @@ class Packer {
 							const temp_i = this._i + 1;
 							this._i += size + 1;
 							const written = this._utf(key);
-							if(this._keyEncoding === 3 && written > 65535) { throw new RangeError("STRING_EXT payload exceeds 65535 bytes"); }
 							if(size === 1) {
 								this._u[temp_i] = written;
 							} else if(size === 2) {
+								if(written > 65535) { throw new RangeError(this._keyEncoding === 3 ? "STRING_EXT payload exceeds 65535 bytes" : "Atom key exceeds 65535 bytes"); }
 								this._u[temp_i] = written >> 8;
 								this._u[temp_i + 1] = written & 255;
 							} else {
