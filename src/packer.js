@@ -487,17 +487,13 @@ class Packer {
 							}
 						}
 						const keyLength = key.length;
+						if(this._keyEncoding === 1 && keyLength > 255) {
+							throw new RangeError("Atom key exceeds 255 UTF-16 code units");
+						}
 						if(this._keyEncoding === 1 && this._useLegacyAtoms) {
-							if(keyLength < 256) {
-								this._expand(keyLength + 2);
-								this._u[this._i++] = 115;
-								this._u[this._i++] = keyLength;
-							} else {
-								this._expand(keyLength + 3);
-								this._u[this._i++] = 100;
-								this._u[this._i++] = keyLength >> 8;
-								this._u[this._i++] = keyLength & 255;
-							}
+							this._expand(keyLength + 2);
+							this._u[this._i++] = 115;
+							this._u[this._i++] = keyLength;
 							for(let k = 0; k < keyLength; k++) {
 								this._u[this._i++] = key.charCodeAt(k);
 							}
