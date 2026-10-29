@@ -262,7 +262,7 @@ export class Packer {
 							this._u[this._i] = 110;
 							this._u[this._i + 2] = Number(neg);
 							this._v.setBigUint64(this._i + 3, abs, true);
-							for (let n = 10; n > 3; n--) {
+							for (let n = 10; n >= 3; n--) {
 								if (this._u[this._i + n] !== 0) {
 									this._u[this._i + 1] = n - 2;
 									this._i += n + 1;
