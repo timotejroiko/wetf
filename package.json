@@ -31,19 +31,19 @@
     ".": {
       "require": "./index.js",
       "import": "./esm/wetf.mjs",
-      "browser": "./umd/wetf.min.js",
+      "browser": "./umd/wetf.js",
       "types": "./types/index.d.ts"
     },
     "./packer": {
       "require": "./src/packer.js",
       "import": "./esm/packer.mjs",
-      "browser": "./umd/packer.min.js",
+      "browser": "./umd/packer.js",
       "types": "./types/src/packer.d.ts"
     },
     "./unpacker": {
       "require": "./src/unpacker.js",
       "import": "./esm/unpacker.mjs",
-      "browser": "./umd/unpacker.min.js",
+      "browser": "./umd/unpacker.js",
       "types": "./types/src/unpacker.d.ts"
     }
   },
