@@ -232,9 +232,9 @@
 						length = this._v.getUint32(this._i);
 						code = this._bitbinaryDecoding;
 						const bits = this._d[this._i + 4];
+						this._i += 5;
 						const byte = this._d[this._i + length - 1];
 						this._d[this._i + length - 1] = byte >> 8 - bits;
-						this._i += 5;
 					}
 					if (code === 5) {
 						const array = Array(length);

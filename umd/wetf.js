@@ -459,7 +459,7 @@
 							this._u[this._i + 1] = length >> 8;
 							this._u[this._i + 2] = length & 255;
 							this._i += 3;
-						} else if (this._bufferEncoding === 2) {
+						} else if (this._bufferEncoding === 2 && length) {
 							this._expand(length + 6);
 							this._u[this._i] = 77;
 							this._v.setUint32(this._i + 1, length);
@@ -476,7 +476,7 @@
 							this._u.set(data, this._i);
 							if (isBitBinary) {
 								const val = this._u[this._i + length - 1];
-								const bitLength = Math.floor(Math.log2(val) + 1);
+								const bitLength = val ? Math.floor(Math.log2(val) + 1) : 1;
 								this._u[this._i + length - 1] = val << 8 - bitLength;
 								this._u[this._i - 1] = bitLength;
 							}
@@ -922,9 +922,9 @@
 						length = this._v.getUint32(this._i);
 						code = this._bitbinaryDecoding;
 						const bits = this._d[this._i + 4];
+						this._i += 5;
 						const byte = this._d[this._i + length - 1];
 						this._d[this._i + length - 1] = byte >> 8 - bits;
-						this._i += 5;
 					}
 					if (code === 5) {
 						const array = Array(length);
