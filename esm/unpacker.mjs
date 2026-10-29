@@ -85,8 +85,8 @@ export class Unpacker {
 				const decompression = new DecompressionStream("deflate");
 				const reader = decompression.readable.getReader();
 				const writer = decompression.writable.getWriter();
-				writer.ready.then(() => writer.write(raw)).then(() => writer.ready).then(() => writer.close());
-				return this._decompressorStreamOut(reader).then(d => {
+				const write = writer.ready.then(() => writer.write(raw)).then(() => writer.ready).then(() => writer.close());
+				return Promise.all([ write, this._decompressorStreamOut(reader) ]).then(([ , d ]) => {
 					if (d.length !== size) {
 						throw new RangeError("Decompressed size does not match ETF header");
 					}
