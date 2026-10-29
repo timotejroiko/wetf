@@ -89,7 +89,7 @@ export class Unpacker {
 					t1[i] = char;
 				}
 				if (!(i in t2)) {
-					t2[i] = char;
+					t2[i] = i < 128 ? char : "�";
 				}
 			}
 		}
@@ -432,20 +432,36 @@ export class Unpacker {
 					str += String.fromCharCode(byte);
 					continue;
 				}
-				if (l - i <= 3 && i + (byte < 224 ? 1 : byte < 240 ? 2 : 3) > l) {
+				if (byte < 194 || byte > 244) {
 					str += "�";
-					break;
+					continue;
 				}
-				if (byte < 224) {
-					str += String.fromCharCode(((byte & 31) << 6) + (data[i++] & 63));
-				} else if (byte < 240) {
-					str += String.fromCharCode(((byte & 15) << 12) + ((data[i++] & 63) << 6) + (data[i++] & 63));
-				} else {
-					const point = ((byte & 7) << 18) + ((data[i++] & 63) << 12) + ((data[i++] & 63) << 6) + (data[i++] & 63);
-					const c1 = 55296 + (point - 65536 >> 10);
-					const c2 = 56320 + (point - 65536 & 1023);
-					str += String.fromCharCode(c1, c2);
+				const second = i < l ? data[i] : 0;
+				if ((second & 192) !== 128 || byte === 224 && second < 160 || byte === 237 && second > 159 || byte === 240 && second < 144 || byte === 244 && second > 143) {
+					str += "�";
+					continue;
 				}
+				i++;
+				let point = (byte & (byte < 224 ? 31 : byte < 240 ? 15 : 7)) << 6 | second & 63;
+				if (byte >= 224) {
+					const third = i < l ? data[i] : 0;
+					if ((third & 192) !== 128) {
+						str += "�";
+						continue;
+					}
+					i++;
+					point = point << 6 | third & 63;
+					if (byte >= 240) {
+						const fourth = i < l ? data[i] : 0;
+						if ((fourth & 192) !== 128) {
+							str += "�";
+							continue;
+						}
+						i++;
+						point = point << 6 | fourth & 63;
+					}
+				}
+				str += point < 65536 ? String.fromCharCode(point) : String.fromCodePoint(point);
 			}
 		} else {
 			str = this._b ? this._b.toString("utf8", i, i + length) : this._u(data.subarray(i, i + length));
