@@ -336,7 +336,7 @@ class Packer {
 						const last = chunks[chunks.length - 1];
 						const cutoff = last < 4294967296n ? last < 65536n ? last < 256n ? 7 : 6 : last < 16777216n ? 5 : 4 : last < 281474976710656n ? last < 1099511627776n ? 3 : 2 : last < 72057594037927936n ? 1 : 0;
 						const size = chunks.length * 8 - cutoff;
-						this._expand(size + 6);
+						this._expand(chunks.length * 8 + 6);
 						if(size < 256) {
 							this._u[this._i] = 110;
 							this._u[this._i + 1] = size;
@@ -428,7 +428,7 @@ class Packer {
 									this._v.setUint32(index, size);
 								}
 								break;
-							case 4: this._v.setUint32(index, size); this._u[this._i++] = 106; break;
+							case 4: this._v.setUint32(index, size); this._expand(1); this._u[this._i++] = 106; break;
 						}
 					}
 				} else if(ArrayBuffer.isView(obj)) {
@@ -583,11 +583,12 @@ class Packer {
 		if(n >= this._poolSize) {
 			let old;
 			if(this._o === 0) {
-				this._poolSize *= 2;
+				this._poolSize = Math.max(this._poolSize * 2, n);
 				old = this._u;
 				this._u = new Uint8Array(this._poolSize);
 			} else {
 				old = this._u.subarray(this._o, this._i);
+				this._poolSize = Math.max(this._poolSize, old.length + r);
 				this._u = new Uint8Array(this._poolSize);
 				this._i = old.length;
 				this._r = this._o;
