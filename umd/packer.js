@@ -134,14 +134,14 @@
 						obj = obj.toString();
 					}
 					if (this._stringEncoding === 2) {
-						this._expand(obj.length * 2 + 5);
+						this._expand(obj.length * 3 + 5);
 						this._u[this._i++] = 109;
 						const temp_i = this._i;
 						this._i += 4;
 						const written = this._utf(obj);
 						this._v.setUint32(temp_i, written);
 					} else {
-						this._expand(obj.length * 2 + 3);
+						this._expand(obj.length * 3 + 3);
 						this._u[this._i++] = 107;
 						const temp_i = this._i;
 						this._i += 2;
@@ -517,7 +517,7 @@
 									this._u[this._i++] = key.charCodeAt(k);
 								}
 							} else {
-								const possibleLength = keyLength * 2;
+								const possibleLength = keyLength * 3;
 								let size = 0;
 								this._expand(possibleLength + 5);
 								if (this._keyEncoding === 2) {
