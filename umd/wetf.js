@@ -671,15 +671,12 @@
 			this._v = new DataView(this._d.buffer, this._d.byteOffset, this._d.length);
 			this._sd = new Uint8Array(12e3);
 			this._sv = new DataView(this._sd.buffer, this._sd.byteOffset, this._sd.length);
+			this._sb = null;
+			this._b = null;
 			this._i = 0;
 			if (typeof process !== "undefined" && typeof process?.versions?.node === "string") {
-				const {
-					StringDecoder
-				} = typeof process?.getBuiltinModule === "function" ? process.getBuiltinModule("node:string_decoder") : require("node:string_decoder");
-				const utfDecoder = new StringDecoder("utf8");
-				const latinDecoder = new StringDecoder("latin1");
-				this._u = utfDecoder.write.bind(utfDecoder);
-				this._l = latinDecoder.write.bind(latinDecoder);
+				this._sb = Buffer.from(this._sd.buffer, this._sd.byteOffset, this._sd.length);
+				this._b = this._sb;
 				this._T = 15;
 				if (!this._decompressor) {
 					this._decompressor = "zlib";
@@ -758,9 +755,13 @@
 				this._sd.set(data);
 				this._d = this._sd;
 				this._v = this._sv;
+				this._b = this._sb;
 			} else {
 				this._d = data;
 				this._v = new DataView(data.buffer, data.byteOffset, data.length);
+				if (this._b) {
+					this._b = Buffer.isBuffer(data) ? data : Buffer.from(data.buffer, data.byteOffset, data.length);
+				}
 			}
 			return this._loop();
 		}
@@ -1027,7 +1028,7 @@
 					}
 				}
 			} else {
-				str = this._u(data.subarray(i, i + length));
+				str = this._b ? this._b.toString("utf8", i, i + length) : this._u(data.subarray(i, i + length));
 			}
 			this._i += length;
 			return str;
@@ -1041,7 +1042,7 @@
 					str += String.fromCharCode(data[n]);
 				}
 			} else {
-				str = this._l(data.subarray(i, i + length));
+				str = this._b ? this._b.toString("latin1", i, i + length) : this._l(data.subarray(i, i + length));
 			}
 			this._i += length;
 			return str;
