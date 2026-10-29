@@ -43,25 +43,31 @@ import { Packer, Unpacker } from "wetf";
 import { Packer, Unpacker } from "npm:wetf";
 
 // deno with unpkg
-import { Packer } from "https://unpkg.com/wetf/esm/packer.js";
+import { Packer } from "https://unpkg.com/wetf/esm/packer.mjs";
 
 // deno with jsdelivr
-import { Unpacker } from "https://cdn.jsdelivr.net/npm/wetf/esm/unpacker.min.js";
+import { Unpacker } from "https://cdn.jsdelivr.net/npm/wetf/esm/unpacker.mjs";
 ```
 
 ### Browsers
 
-For Browsers you can access both the UMD versions and the ESM versions via `unpkg` and their minified versions via `jsdelivr`. There are separate versions to include only the Packer or only the Unpacker.
+For Browsers you can access both the UMD versions (`.js`) and the ESM versions (`.mjs`) via `unpkg` or `jsdelivr`. There are separate versions to include only the Packer or only the Unpacker. The package ships unminified files; `jsdelivr` can also provide minified UMD files.
 
 ```js
-// via jsdelivr
-"https://cdn.jsdelivr.net/npm/wetf/{umd | esm}/{packer | unpacker | wetf}.js"
+// UMD via jsdelivr
+"https://cdn.jsdelivr.net/npm/wetf/umd/{packer | unpacker | wetf}.js"
 
-// minified via jsdelivr
-"https://cdn.jsdelivr.net/npm/wetf/{umd | esm}/{packer | unpacker | wetf}.min.js"
+// minified UMD via jsdelivr
+"https://cdn.jsdelivr.net/npm/wetf/umd/{packer | unpacker | wetf}.min.js"
 
-// via unpkg
-"https://unpkg.com/wetf/{umd | esm}/{packer | unpacker | wetf}.js"
+// ESM via jsdelivr
+"https://cdn.jsdelivr.net/npm/wetf/esm/{packer | unpacker | wetf}.mjs"
+
+// UMD via unpkg
+"https://unpkg.com/wetf/umd/{packer | unpacker | wetf}.js"
+
+// ESM via unpkg
+"https://unpkg.com/wetf/esm/{packer | unpacker | wetf}.mjs"
 ```
 
 Examples:
@@ -77,8 +83,8 @@ Examples:
 ```html
 <!-- requirejs -->
 <script>
-    require(["https://cdn.jsdelivr.net/npm/wetf/umd/unpacker.min.js"], function(Wetf) {
-        const { Unpacker } = Wetf;
+    require(["https://cdn.jsdelivr.net/npm/wetf/umd/unpacker.min.js"], function(exports) {
+        const { Unpacker } = exports.Wetf;
     });
 </script>
 ```
@@ -95,7 +101,7 @@ Examples:
 ```html
 <!-- esm -->
 <script type="module">
-    import { Packer, Unpacker } from "https://cdn.jsdelivr.net/npm/wetf/esm/wetf.min.js";
+    import { Packer, Unpacker } from "https://cdn.jsdelivr.net/npm/wetf/esm/wetf.mjs";
 </script>
 ```
 
@@ -123,7 +129,7 @@ const packer = new Packer({
     compression: "compressionstream"
 });
 
-const etf = await packer.pack({a:10,b:20}) // Uint8Array<[131,80,0,0,0,23,120,156,43,97,96,96,96,42,103,76,76,228,42,103,76,74,20,1,0,21,222,3,10]>
+const etf = await packer.pack({a:10,b:20}) // Uint8Array<[131,80,0,0,0,15,120,156,43,97,96,96,96,42,103,76,76,228,42,103,76,74,20,1,0,21,222,3,10]>
 ```
 
 ### Packer Options
@@ -168,6 +174,8 @@ This object controls the encoding behavior and determines which JavaScript data 
 
 \* Ignored types will have their object keys deleted and their array indexes spliced from the final value.
 
+The [ETF specification](https://www.erlang.org/doc/apps/erts/erl_ext_dist.html#string_ext) limits `STRING_EXT` payloads to 65,535 bytes. This is a format constraint, not a JavaScript-specific limitation. The packer throws a `RangeError` when strings, object keys or byte views configured to use `"string"` encoding exceed it. Use `"binary"` encoding for larger payloads.
+
 ### Packer Limitations
 
 The Packer currently cannot create the following ETF types:
@@ -176,7 +184,7 @@ The Packer currently cannot create the following ETF types:
 
 And does not support encoding the following JS objects:
 
-`Map`, `Set`, `Date`, `Error`, `ArrayBuffer`, `DataView`, `Function`, `RegExp`
+`Map`, `Set`, `Date`, `Error`, `ArrayBuffer`, `Function`, `RegExp`
 
 Methods to create and support some of these types and objects might be added in the future, feel free to open a feature request or issue.
 
@@ -184,7 +192,11 @@ The following JS objects may have special rules and behavior:
 
 `Symbol`s are stringified to `Symbol(description)` and encoded as strings.
 
-`ArrayBuffer` and `DataView` are not directly supported, but Buffer and TypedArrays are.
+`ArrayBuffer` is not directly supported. Buffer, TypedArrays and DataView are encoded as raw bytes, respecting their byte offset and byte length.
+
+Values encoded as `STRING_EXT` are limited to 65,535 bytes according to the [ETF specification](https://www.erlang.org/doc/apps/erts/erl_ext_dist.html#string_ext) and the Packer will throw a RangeError if exceeded. For longer strings, `BINARY_EXT` should be used instead.
+
+Values encoded as `ATOM`s are not subject to Erlang's hard limit of 255 characters per atom, instead they follow the wire format limit of 65,535 bytes. The Packer allows these atoms to be encoded, but atoms larger than 255 characters may fail to decode in a real Erlang application.
 
 ## Unpacker
 
@@ -207,7 +219,7 @@ const unpacker = new Unpacker({
     decompression: "decompressionstream"
 });
 
-const etf = new Uint8Array([131,80,0,0,0,23,120,156,43,97,96,96,96,42,103,76,76,228,42,103,76,74,20,1,0,21,222,3,10]);
+const etf = new Uint8Array([131,80,0,0,0,15,120,156,43,97,96,96,96,42,103,76,76,228,42,103,76,74,20,1,0,21,222,3,10]);
 const js = await unpacker.unpack(etf) // { a: 10, b: 20 }
 ```
 
@@ -219,8 +231,9 @@ All options are optional.
 |---|---|---|---|
 | decompression | [Decompression Method](#decompression-method) | - | Specify the decompression method |
 | decoding | [Decoding Options](#decoding-options) | {} | Customize decoding behavior |
-| atomTable | object | [Default Atom Table](#default-atom-table) | Defines a table of atoms and the fixed values they represent. When an atom is decoded, it will be replaced by the corresponding value, or converted to a string if no value is found |
-| atomRegistration | boolean | true | Whether to enable adding newly encountered atoms to the atom table. This option slightly increases memory usage and makes first-time atoms slightly slower to decode but subsequent decodings of the same atom will become much faster (enabled by default) |
+| atomTable | object | [Default Atom Table](#default-atom-table) | Defines substitutions for atom values, independently of object keys. Unmapped atoms are decoded as strings |
+| atomKeyTable | object | {} | Defines substitutions for atoms used as object keys, independently of `atomTable`. Unmapped atom keys are decoded as strings |
+| atomRegistration | boolean | true | Whether to cache newly encountered atoms in the separate value and key tables. This option slightly increases memory usage and makes first-time atoms slightly slower to decode but subsequent decodings of the same atom will become much faster (enabled by default) |
 
 ### Decompression Method
 
@@ -243,6 +256,7 @@ This object controls the decoding behavior and determines which ETF data types s
 | nil | "null", "array" | "null" | Whether `NIL_EXT` should be decoded as `null` or as `[]` |
 | string | "utf8", "latin1", "buffer", "uint8array", "array" | "utf8" | Whether `STRING_EXT` should be decoded as a string (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
 | binary | "utf8", "latin1", "buffer", "uint8array", "array" | "uint8array" | Whether `BINARY_EXT` should be decoded as a string (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
+| binaryKey | "utf8", "latin1" | unset | Decode `BINARY_EXT` object keys as text independently of `binary`. When unset, keys follow `binary` decoding and are coerced to property keys |
 | bitbinary | "utf8", "latin1", "buffer", "uint8array", "array" | "uint8array" | Whether `BIT_BINARY_EXT` should be decoded as a string (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
 | bigint | "bigint", "string" | "bigint" | Whether `*_BIG_EXT` should be decoded as bigint or as a stringified number |
 | safebigint | "number", "bigint", "string" | "bigint" | Whether `*_BIG_EXT` smaller than 53 bits should be decoded as a number, a bigint or a stringified number |
@@ -265,10 +279,13 @@ A table of atoms and the JavaScript values they represent. The default atom tabl
 }
 ```
 
-If a custom atom table is defined, it replaces the entire default table. To simply add an atom to the default table, copy it first and then add your atoms.  
-This table also works as an accelerator as Atoms in the table are faster to decode. Atoms not in the table will be decoded as strings.
+If a custom `atomTable` is defined, it replaces the entire default table. To simply add an atom to the default table, copy it first and then add your atoms.
 
-If `atomRegistration` is enabled, newly encountered atoms will automatically be added to the table as strings, making them faster to decode the next time they appear.
+`atomTable` applies only to atom values. Atoms used as object keys use a separate `atomKeyTable`, which defaults to `{}`. For example, the atom `true` decodes to the boolean `true` as a value, but remains the string `"true"` as an object key unless explicitly substituted in `atomKeyTable`. Key substitutions that are neither strings nor symbols are converted to strings.
+
+Both tables also work as accelerators: atoms in a table are faster to decode. Unmapped atoms are decoded as strings.
+
+If `atomRegistration` is enabled, newly encountered atoms will automatically be cached as strings in the appropriate value or key table, making them faster to decode the next time they appear.
 
 ### Unpacker Limitations
 
