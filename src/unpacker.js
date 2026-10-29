@@ -360,8 +360,9 @@ class Unpacker {
 			let n = 0;
 			for(; n < length; n++) {
 				const v = this._d[i++];
-				if(!(v in t)) { break; }
-				t = t[v];
+				const next = t[v];
+				if(typeof next === "undefined" && !(v in t)) { break; }
+				t = next;
 			}
 			if(n === length) {
 				this._i += length;
