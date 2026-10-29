@@ -424,8 +424,16 @@
 								break;
 
 							case 2:
-							case 3:
 								this._v.setUint32(index, size);
+								break;
+
+							case 3:
+								if (size < 0) {
+									this._u[index - 1] = 106;
+									this._i = index;
+								} else {
+									this._v.setUint32(index, size);
+								}
 								break;
 
 							case 4:
