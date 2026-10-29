@@ -622,11 +622,20 @@ class Packer {
 					this._u[this._i++] = 128 + ((c >> 6) & 63);
 					this._u[this._i++] = 128 + (c & 63);
 				} else {
-					const c2 = 65536 + ((c & 1023) << 10) + (string.charCodeAt(++n) & 1023);
-					this._u[this._i++] = 240 + (c2 >> 18);
-					this._u[this._i++] = 128 + ((c2 >> 12) & 63);
-					this._u[this._i++] = 128 + ((c2 >> 6) & 63);
-					this._u[this._i++] = 128 + (c2 & 63);
+					const next = string.charCodeAt(n + 1);
+					// Only consume the next code unit for a valid surrogate pair.
+					if(c < 56320 && next >= 56320 && next <= 57343) {
+						const c2 = 65536 + ((c & 1023) << 10) + (next & 1023);
+						n++;
+						this._u[this._i++] = 240 + (c2 >> 18);
+						this._u[this._i++] = 128 + ((c2 >> 12) & 63);
+						this._u[this._i++] = 128 + ((c2 >> 6) & 63);
+						this._u[this._i++] = 128 + (c2 & 63);
+					} else {
+						this._u[this._i++] = 239;
+						this._u[this._i++] = 191;
+						this._u[this._i++] = 189;
+					}
 				}
 			}
 			return this._i - actualLength;
