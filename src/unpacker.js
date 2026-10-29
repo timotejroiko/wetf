@@ -280,7 +280,7 @@ class Unpacker {
 				return this._bigintDecoding === 2 ? num.toString() : num;
 			}
 			case 116: { // object
-				/** @type {Record<string, any>} */ const obj = {};
+				/** @type {Record<PropertyKey, any>} */ const obj = {};
 				const length = this._v.getUint32(this._i);
 				this._i += 4;
 				for(let i = 0; i < length; i++) {
@@ -291,8 +291,14 @@ class Unpacker {
 						key = this._binaryKeyDecoding === 2 ? this._latin(keyLength) : this._utf(keyLength);
 					} else {
 						key = this._loop();
+						if(typeof key !== "string" && typeof key !== "symbol") { key = String(key); }
 					}
-					obj[key] = this._loop();
+					// Preserve __proto__ as map data instead of invoking the inherited setter.
+					if(key === "__proto__") {
+						Object.defineProperty(obj, key, { value: this._loop(), writable: true, enumerable: true, configurable: true });
+					} else {
+						obj[key] = this._loop();
+					}
 				}
 				return obj;
 			}

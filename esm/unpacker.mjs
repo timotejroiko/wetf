@@ -296,8 +296,20 @@ export class Unpacker {
 						key = this._binaryKeyDecoding === 2 ? this._latin(keyLength) : this._utf(keyLength);
 					} else {
 						key = this._loop();
+						if (typeof key !== "string" && typeof key !== "symbol") {
+							key = String(key);
+						}
 					}
-					obj[key] = this._loop();
+					if (key === "__proto__") {
+						Object.defineProperty(obj, key, {
+							value: this._loop(),
+							writable: true,
+							enumerable: true,
+							configurable: true
+						});
+					} else {
+						obj[key] = this._loop();
+					}
 				}
 				return obj;
 			}
