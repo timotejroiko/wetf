@@ -264,15 +264,11 @@
 									this._v.setBigUint64(this._i++, abs, true);
 								} else {
 									this._u[this._i++] = 98;
-									this._v.setBigUint64(this._i, abs);
+									this._v.setBigInt64(this._i, obj);
 									this._u[this._i] = this._u[this._i + 4];
 									this._u[this._i + 1] = this._u[this._i + 5];
 									this._u[this._i + 2] = this._u[this._i + 6];
 									this._u[this._i + 3] = this._u[this._i + 7];
-									if (neg) {
-										const n = this._u[this._i];
-										this._u[this._i] = n | 128;
-									}
 									this._i += 4;
 								}
 							} else {
