@@ -370,8 +370,15 @@ class Unpacker {
 			const l = i + length;
 			while(i < l) {
 				const byte = this._d[i++];
-				if(byte < 128) { str += String.fromCharCode(byte); }
-				else if(byte < 224) { str += String.fromCharCode(((byte & 31) << 6) + (data[i++] & 63)); }
+				if(byte < 128) {
+					str += String.fromCharCode(byte);
+					continue;
+				}
+				if(l - i <= 3 && i + (byte < 224 ? 1 : byte < 240 ? 2 : 3) > l) {
+					str += "\uFFFD";
+					break;
+				}
+				if(byte < 224) { str += String.fromCharCode(((byte & 31) << 6) + (data[i++] & 63)); }
 				else if(byte < 240) { str += String.fromCharCode(((byte & 15) << 12) + ((data[i++] & 63) << 6) + (data[i++] & 63)); }
 				else {
 					const point = ((byte & 7) << 18) + ((data[i++] & 63) << 12) + ((data[i++] & 63) << 6) + (data[i++] & 63);
