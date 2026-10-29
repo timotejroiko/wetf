@@ -6,7 +6,7 @@ class Packer {
 	 *      cacheKeys?: boolean;
 	 *      compression?: boolean | "zlib" | "compressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>);
 	 *      encoding?: {
-	 *          string?: "binary" | "string";
+	 *          string?: "binary" | "string" | "list";
 	 *          key?: "binary" | "string" | "atom";
 	 *          safeInt?: "bigint" | "float";
 	 *          safeBigInt?: "number" | "bigint";
@@ -23,7 +23,7 @@ class Packer {
 	 */
 	constructor(options = {}) {
 		/** @private */ this._compressor = options.compression ?? false;
-		/** @private */ this._stringEncoding = ["string", "binary"].indexOf(options.encoding?.string?.toLowerCase() ?? "") + 1 || 1;
+		/** @private */ this._stringEncoding = ["string", "binary", "list"].indexOf(options.encoding?.string?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._keyEncoding = ["atom", "binary", "string"].indexOf(options.encoding?.key?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._safeIntEncoding = ["bigint", "float"].indexOf(options.encoding?.safeInt?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._safeBigIntEncoding = ["number", "bigint"].indexOf(options.encoding?.safeBigInt?.toLowerCase() ?? "") + 1 || 1;
@@ -156,6 +156,21 @@ class Packer {
 					this._i += 4;
 					const written = this._utf(obj);
 					this._v.setUint32(temp_i, written);
+				} else if(this._stringEncoding === 3) {
+					this._expand(obj.length * 6 + 6);
+					this._u[this._i++] = 108;
+					const temp_i = this._i;
+					this._i += 4;
+					const start = this._i;
+					const written = this._utf(obj);
+					this._v.setUint32(temp_i, written);
+					// Expand backwards in place so unread UTF-8 bytes are not overwritten.
+					for(let n = written - 1; n >= 0; n--) {
+						this._u[start + n * 2 + 1] = this._u[start + n];
+						this._u[start + n * 2] = 97;
+					}
+					this._i += written;
+					this._u[this._i++] = 106;
 				} else {
 					this._expand(obj.length * 3 + 3);
 					this._u[this._i++] = 107;
