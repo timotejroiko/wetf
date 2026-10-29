@@ -303,7 +303,7 @@ class Unpacker {
 				return obj;
 			}
 		}
-		console.log(this._d.slice(this._i - 20, this._i + 20));
+		// console.log(this._d.slice(this._i - 20, this._i + 20));
 		throw new Error(`Unexpected byte: ${type}`);
 	}
 
