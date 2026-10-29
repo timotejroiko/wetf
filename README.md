@@ -245,7 +245,7 @@ This object controls the decoding behavior and determines which ETF data types s
 | binary | "utf8", "latin1", "buffer", "uint8array", "array" | "uint8array" | Whether `BINARY_EXT` should be decoded as a string (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
 | bitbinary | "utf8", "latin1", "buffer", "uint8array", "array" | "uint8array" | Whether `BIT_BINARY_EXT` should be decoded as a string (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
 | bigint | "bigint", "string" | "bigint" | Whether `*_BIG_EXT` should be decoded as bigint or as a stringified number |
-| safebigint | "number", "bigint", "string" | "number" | Whether `*_BIG_EXT` smaller than 53 bits should be decoded as a number, a bigint or a stringified number |
+| safebigint | "number", "bigint", "string" | "bigint" | Whether `*_BIG_EXT` smaller than 53 bits should be decoded as a number, a bigint or a stringified number |
 
 ### Default Atom Table
 
