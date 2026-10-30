@@ -11,6 +11,7 @@ declare class Unpacker {
             safebigint?: "number" | "bigint" | "string";
             bigint?: "bigint" | "string";
         };
+        browserStrictLatin1?: boolean;
         atomTable?: Record<string, any>;
         atomKeyTable?: Record<string, any>;
         atomRegistration?: boolean;
@@ -23,6 +24,7 @@ declare class Unpacker {
     private _bitbinaryDecoding;
     private _safebigintDecoding;
     private _bigintDecoding;
+    private _browserStrictLatin1;
     private _atomRegistration;
     private _d;
     private _v;

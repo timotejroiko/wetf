@@ -8,6 +8,7 @@ export class Unpacker {
 		this._bitbinaryDecoding = [ "utf8", "latin1", "buffer", "uint8array", "array" ].indexOf(options.decoding?.bitbinary?.toLowerCase() ?? "") + 1 || 4;
 		this._safebigintDecoding = [ "number", "bigint", "string" ].indexOf(options.decoding?.safebigint?.toLowerCase() ?? "") + 1 || 1;
 		this._bigintDecoding = [ "bigint", "string" ].indexOf(options.decoding?.bigint?.toLowerCase() ?? "") + 1 || 1;
+		this._browserStrictLatin1 = Boolean(options.browserStrictLatin1 ?? true);
 		this._atomRegistration = Boolean(options.atomRegistration ?? true);
 		this._d = new Uint8Array(0);
 		this._v = new DataView(this._d.buffer, this._d.byteOffset, this._d.length);
@@ -477,7 +478,7 @@ export class Unpacker {
 		let str = "";
 		const i = this._i;
 		const data = this._d;
-		if (length < this._T) {
+		if (length < this._T || this._browserStrictLatin1 && !this._b) {
 			for (let n = i; n < i + length; n++) {
 				str += String.fromCharCode(data[n]);
 			}

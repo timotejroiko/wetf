@@ -12,6 +12,7 @@ class Unpacker {
 	 * 			safebigint?: "number" | "bigint" | "string";
 	 * 			bigint?: "bigint" | "string";
 	 * 		};
+	 * 		browserStrictLatin1?: boolean;
 	 * 		atomTable?: Record<string, any>;
 	 * 		atomKeyTable?: Record<string, any>;
 	 * 		atomRegistration?: boolean
@@ -26,6 +27,7 @@ class Unpacker {
 		/** @private */ this._bitbinaryDecoding = ["utf8", "latin1", "buffer", "uint8array", "array"].indexOf(options.decoding?.bitbinary?.toLowerCase() ?? "") + 1 || 4;
 		/** @private */ this._safebigintDecoding = ["number", "bigint", "string"].indexOf(options.decoding?.safebigint?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._bigintDecoding = ["bigint", "string"].indexOf(options.decoding?.bigint?.toLowerCase() ?? "") + 1 || 1;
+		/** @private */ this._browserStrictLatin1 = Boolean(options.browserStrictLatin1 ?? true);
 		/** @private */ this._atomRegistration = Boolean(options.atomRegistration ?? true);
 		/** @private */ this._d = new Uint8Array(0);
 		/** @private */ this._v = new DataView(this._d.buffer, this._d.byteOffset, this._d.length);
@@ -472,7 +474,7 @@ class Unpacker {
 		let str = "";
 		const i = this._i;
 		const data = this._d;
-		if(length < this._T) {
+		if(length < this._T || this._browserStrictLatin1 && !this._b) {
 			for(let n = i; n < i + length; n++) {
 				str += String.fromCharCode(data[n]);
 			}
