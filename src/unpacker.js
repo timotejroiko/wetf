@@ -19,12 +19,12 @@ class Unpacker {
 	 */
 	constructor(options = {}) {
 		/** @private */ this._decompressor = options.decompression;
-		/** @private */ this._nilDecoding = ["null", "array"].indexOf(options.decoding?.nil?.toLowerCase() ?? "") + 1 || 1;
-		/** @private */ this._stringDecoding = ["utf8", "latin1", "buffer", "uint8array", "array"].indexOf(options.decoding?.string?.toLowerCase() ?? "") + 1 || 1;
-		/** @private */ this._binaryDecoding = ["utf8", "latin1", "buffer", "uint8array", "array"].indexOf(options.decoding?.binary?.toLowerCase() ?? "") + 1 || 4;
-		/** @private */ this._binaryKeyDecoding = ["utf8", "latin1"].indexOf(options.decoding?.binaryKey?.toLowerCase() ?? "") + 1;
+		/** @private */ this._nilDecoding = ["null", "array"].indexOf(options.decoding?.nil?.toLowerCase() ?? "") + 1 || 2;
+		/** @private */ this._stringDecoding = ["utf8", "latin1", "buffer", "uint8array", "array"].indexOf(options.decoding?.string?.toLowerCase() ?? "") + 1 || 2;
+		/** @private */ this._binaryDecoding = ["utf8", "latin1", "buffer", "uint8array", "array"].indexOf(options.decoding?.binary?.toLowerCase() ?? "") + 1 || 1;
+		/** @private */ this._binaryKeyDecoding = ["utf8", "latin1"].indexOf(options.decoding?.binaryKey?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._bitbinaryDecoding = ["utf8", "latin1", "buffer", "uint8array", "array"].indexOf(options.decoding?.bitbinary?.toLowerCase() ?? "") + 1 || 4;
-		/** @private */ this._safebigintDecoding = ["number", "bigint", "string"].indexOf(options.decoding?.safebigint?.toLowerCase() ?? "") + 1 || 2;
+		/** @private */ this._safebigintDecoding = ["number", "bigint", "string"].indexOf(options.decoding?.safebigint?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._bigintDecoding = ["bigint", "string"].indexOf(options.decoding?.bigint?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._atomRegistration = Boolean(options.atomRegistration ?? true);
 		/** @private */ this._d = new Uint8Array(0);
