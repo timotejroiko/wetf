@@ -8,7 +8,7 @@
 		constructor(options = {}) {
 			this._compressor = options.compression ?? false;
 			this._stringEncoding = [ "string", "binary", "char-string", "char-list" ].indexOf(options.encoding?.string?.toLowerCase() ?? "") + 1 || 2;
-			this._keyEncoding = [ "atom", "binary", "string", "char-string" ].indexOf(options.encoding?.key?.toLowerCase() ?? "") + 1 || 1;
+			this._keyEncoding = [ "atom", "binary", "string", "char-string" ].indexOf(options.encoding?.key?.toLowerCase() ?? "") + 1 || 2;
 			this._safeIntEncoding = [ "bigint", "float" ].indexOf(options.encoding?.safeInt?.toLowerCase() ?? "") + 1 || 1;
 			this._safeBigIntEncoding = [ "number", "bigint" ].indexOf(options.encoding?.safeBigInt?.toLowerCase() ?? "") + 1 || 1;
 			this._nullEncoding = [ "atom", "nil" ].indexOf(options.encoding?.null?.toLowerCase() ?? "") + 1 || 1;

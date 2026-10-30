@@ -24,7 +24,7 @@ class Packer {
 	constructor(options = {}) {
 		/** @private */ this._compressor = options.compression ?? false;
 		/** @private */ this._stringEncoding = ["string", "binary", "char-string", "char-list"].indexOf(options.encoding?.string?.toLowerCase() ?? "") + 1 || 2;
-		/** @private */ this._keyEncoding = ["atom", "binary", "string", "char-string"].indexOf(options.encoding?.key?.toLowerCase() ?? "") + 1 || 1;
+		/** @private */ this._keyEncoding = ["atom", "binary", "string", "char-string"].indexOf(options.encoding?.key?.toLowerCase() ?? "") + 1 || 2;
 		/** @private */ this._safeIntEncoding = ["bigint", "float"].indexOf(options.encoding?.safeInt?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._safeBigIntEncoding = ["number", "bigint"].indexOf(options.encoding?.safeBigInt?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._nullEncoding = ["atom", "nil"].indexOf(options.encoding?.null?.toLowerCase() ?? "") + 1 || 1;
