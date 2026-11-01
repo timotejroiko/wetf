@@ -45,7 +45,10 @@ export class Packer {
 		}
 		if (this._compressor) {
 			if (this._compressor === "zlib") {
-				const zlib = typeof process?.getBuiltinModule === "function" ? process.getBuiltinModule("node:zlib") : require("node:zlib");
+				const zlib = typeof process !== "undefined" && typeof process.getBuiltinModule === "function" ? process.getBuiltinModule("node:zlib") : typeof require === "function" ? require("node:zlib") : null;
+				if (!zlib) {
+					throw new Error("Lazy-loading zlib with ESM requires Node.js 20.16+ or 22.3+. Use zlib in a custom callback or switch to CommonJS.");
+				}
 				this._z = raw => {
 					const comp = zlib.deflateSync(raw);
 					return this._compressorOut(comp, raw.length);

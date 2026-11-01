@@ -118,7 +118,8 @@ class Unpacker {
 			const raw = data.subarray(i + 5);
 			if(this._decompressor === "zlib") {
 				// @ts-ignore
-				const zlib = typeof process?.getBuiltinModule === "function" ? process.getBuiltinModule("node:zlib") : require("node:zlib");
+				const zlib = typeof process !== "undefined" && typeof process.getBuiltinModule === "function" ? process.getBuiltinModule("node:zlib") : typeof require === "function" ? require("node:zlib") : null;
+				if(!zlib) { throw new Error("Lazy-loading zlib with ESM requires Node.js 20.16+ or 22.3+. Use zlib in a custom callback or switch to CommonJS."); }
 				const decomp = zlib.inflateSync(raw);
 				if(decomp.length !== size) { throw new RangeError("Decompressed size does not match ETF header"); }
 				return this.unpack(decomp);
