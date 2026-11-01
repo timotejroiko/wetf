@@ -183,6 +183,9 @@ class Unpacker {
 				this._i += 4;
 				return int;
 			}
+			case 99: { // legacy float
+				return parseFloat(this._latin(31));
+			}
 			case 100: case 115: case 118: case 119: { // atom
 				const length = type === 100 || type === 118 ? (this._d[this._i++] << 8) + this._d[this._i++] : this._d[this._i++];
 				if(this._cacheAtoms) {

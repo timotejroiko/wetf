@@ -186,6 +186,11 @@ export class Unpacker {
 				return int;
 			}
 
+		case 99:
+			{
+				return parseFloat(this._latin(31));
+			}
+
 		case 100:
 		case 115:
 		case 118:
