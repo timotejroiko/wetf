@@ -175,7 +175,7 @@ This object controls the encoding behavior and determines which JavaScript data 
 
 The Packer currently cannot create the following ETF types:
 
-`Distribution Header`, `ATOM_CACHE_REF`, `FLOAT_EXT`, `PORT_EXT`, `NEW_PORT_EXT`, `V4_PORT_EXT`, `PID_EXT`, `NEW_PID_EXT`, `REFERENCE_EXT`, `NEW_REFERENCE_EXT`, `NEWER_REFERENCE_EXT`, `FUN_EXT`, `NEW_FUN_EXT`, `EXPORT_EXT`
+`Distribution Header`, `ATOM_CACHE_REF`, `FLOAT_EXT`, `PORT_EXT`, `NEW_PORT_EXT`, `V4_PORT_EXT`, `PID_EXT`, `NEW_PID_EXT`, `REFERENCE_EXT`, `NEW_REFERENCE_EXT`, `NEWER_REFERENCE_EXT`, `FUN_EXT`, `NEW_FUN_EXT`, `EXPORT_EXT`, `RECORD_EXT`
 
 The following JS objects are always ignored and their contents are not serialized:
 
@@ -243,7 +243,7 @@ All options are optional.
 |---|---|
 | "zlib" | Decompress using `inflateSync` from NodeJS's native zlib module (not available in browsers) |
 | "decompressionstream" | Decompress using `DecompressionStream` from native web streams. This method is Async and will make `unpack` return a Promise (available in modern browsers and node 18+) |
-| (Uint8Array \| Buffer) => Uint8Array \| Buffer \| Promise\<Uint8Array\> \| Promise\<Buffer\> | Decompress using a custom function. If the function is Async, `unpack` will return a Promise |
+| (Uint8Array) => Uint8Array \| Promise\<Uint8Array\> | Decompress using a custom function. NodeJS Buffers are also accepted because they extend Uint8Array. If the function is Async, `unpack` will return a Promise |
 
 If no decompression method is set, **Wetf** will decompress using "zlib" if available and fallback to "decompressionstream";
 
@@ -259,7 +259,7 @@ This object controls the decoding behavior and determines which ETF data types s
 | binary | "utf8", "latin1", "buffer", "uint8array", "array" | "utf8" | Whether `BINARY_EXT` should be decoded as a text (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
 | binaryKey | "utf8", "latin1" | "utf8" | Whether `BINARY_EXT` object keys should be decoded as utf8 or latin1 text |
 | bitbinary | "utf8", "latin1", "buffer", "uint8array", "array" | "uint8array" | Whether `BIT_BINARY_EXT` should be decoded as a text (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
-| list | "array", "string" | "array" | Whether `LIST_EXT` should be decoded as array of values or as text (list of unicode characters). Supports both proper and improper lists |
+| list | "array", "string" | "array" | Whether `LIST_EXT` should be decoded as array of values or as text (list of unicode characters). Supports both proper and improper tails. String decoding supports byte-string continuation tails |
 | bigint | "bigint", "string" | "bigint" | Whether `*_BIG_EXT` should be decoded as bigint or as a numeric string |
 | safebigint | "number", "bigint", "string" | "number" | Whether `*_BIG_EXT` integers within JavaScript's safe integer range should be decoded as number, bigint or numeric string |
 
@@ -287,7 +287,7 @@ If a custom `atomTable` is defined, it replaces the entire default table. To sim
 
 The Unpacker currently cannot unpack the following ETF types:
 
-`Distribution Header`, `ATOM_CACHE_REF`, `FLOAT_EXT`, `PORT_EXT`, `NEW_PORT_EXT`, `V4_PORT_EXT`, `PID_EXT`, `NEW_PID_EXT`, `REFERENCE_EXT`, `NEW_REFERENCE_EXT`, `NEWER_REFERENCE_EXT`, `FUN_EXT`, `NEW_FUN_EXT`, `EXPORT_EXT`
+`Distribution Header`, `ATOM_CACHE_REF`, `FLOAT_EXT`, `PORT_EXT`, `NEW_PORT_EXT`, `V4_PORT_EXT`, `PID_EXT`, `NEW_PID_EXT`, `REFERENCE_EXT`, `NEW_REFERENCE_EXT`, `NEWER_REFERENCE_EXT`, `FUN_EXT`, `NEW_FUN_EXT`, `EXPORT_EXT`, `RECORD_EXT`
 
 Support for these types might be added in the future, feel free to open a feature request or issue.
 

@@ -2,7 +2,7 @@ class Unpacker {
 	/**
 	 * 
 	 * @param {{
-	 * 		decompression?: "zlib" | "decompressionstream" | ((data: Uint8Array | Buffer) => Uint8Array | Buffer | Promise<Uint8Array> | Promise<Buffer>);
+	 * 		decompression?: "zlib" | "decompressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>);
 	 * 		cacheKeys?: boolean;
 	 * 		cacheAtoms?: boolean;
 	 * 		decoding?: {
@@ -108,7 +108,7 @@ class Unpacker {
 
 	/**
 	 * 
-	 * @param {Buffer | Uint8Array} data 
+	 * @param {Uint8Array} data 
 	 * @return {any}
 	 */
 	unpack(data) {
@@ -281,6 +281,8 @@ class Unpacker {
 					return this._safebigintDecoding === 3 ? "0" : this._safebigintDecoding === 1 ? 0 : 0n;
 				}
 				const sign = this._d[this._i++];
+				const end = this._i + length;
+				while(length > 1 && this._d[this._i + length - 1] === 0) { length--; }
 				if(length < 7 || (length === 7 && this._d[this._i + 6] < 32)) {
 					let num = 0;
 					if(length === 1) {
@@ -298,8 +300,8 @@ class Unpacker {
 					} else {
 						num = (((this._d[this._i + 6] << 16) + (this._d[this._i + 5] << 8) + this._d[this._i + 4] ) * 4294967296) + this._v.getUint32(this._i, true);
 					}
-					this._i += length;
-					if(sign) { num = -num; }
+					this._i = end;
+					if(sign && num !== 0) { num = -num; }
 					return this._safebigintDecoding === 3 ? num.toString() : this._safebigintDecoding === 1 ? num : BigInt(num);
 				}
 				let num;
@@ -325,7 +327,7 @@ class Unpacker {
 						}
 					}
 				}
-				this._i += length;
+				this._i = end;
 				if(sign) { num = -num; }
 				return this._bigintDecoding === 2 ? num.toString() : num;
 			}
@@ -459,11 +461,24 @@ class Unpacker {
 	 */
 	_charList(length) {
 		let string = "";
-		for(let i = 0; i <= length; i++) {
+		for(let i = 0, count = length; i <= count; i++) {
 			const pointType = this._d[this._i];
-			if(i === length && pointType === 106) {
-				this._i++;
-				break;
+			if(i === count) {
+				if(pointType === 106) {
+					this._i++;
+					break;
+				}
+				if(pointType === 108) {
+					count = this._v.getUint32(this._i + 1);
+					this._i += 5;
+					i = -1;
+					continue;
+				}
+				if(pointType === 107) {
+					const size = (this._d[this._i + 1] << 8) + this._d[this._i + 2];
+					this._i += 3;
+					return string + this._latin(size);
+				}
 			}
 			if(pointType !== 97 && pointType !== 98 && pointType !== 110 && pointType !== 111) {
 				throw new TypeError("Character list elements must be integers");

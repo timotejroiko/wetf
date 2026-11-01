@@ -1,7 +1,7 @@
 export = Unpacker;
 declare class Unpacker {
     constructor(options?: {
-        decompression?: "zlib" | "decompressionstream" | ((data: Uint8Array | Buffer) => Uint8Array | Buffer | Promise<Uint8Array> | Promise<Buffer>);
+        decompression?: "zlib" | "decompressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>);
         cacheKeys?: boolean;
         cacheAtoms?: boolean;
         decoding?: {
@@ -47,7 +47,7 @@ declare class Unpacker {
     private _atomTableUtf;
     private _keyTableLatin;
     private _keyTableUtf;
-    unpack(data: Buffer | Uint8Array): any;
+    unpack(data: Uint8Array): any;
     private _loop;
     private _key;
     private _lookup;
