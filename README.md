@@ -117,7 +117,7 @@ const packer = new Packer({
     // packer options
 });
 
-const etf = packer.pack({a:10,b:20}) // Uint8Array<[131,116,0,0,0,2,119,1,97,97,10,119,1,98,97,20]>
+const etf = packer.pack({a:10,b:20}) // Uint8Array<[131,116,0,0,0,2,109,0,0,0,1,97,97,10,109,0,0,0,1,98,97,20]>
 ```
 
 **Wetf** supports various compression methods, if an asynchronous compression method is used, the `pack` method will instead return a Promise that resolves into Uint8Array.
@@ -127,7 +127,7 @@ const packer = new Packer({
     compression: "compressionstream"
 });
 
-const etf = await packer.pack({a:10,b:20}) // Uint8Array<[131,80,0,0,0,15,120,156,43,97,96,96,96,42,103,76,76,228,42,103,76,74,20,1,0,21,222,3,10]>
+const etf = await packer.pack({a:10,b:20}) // Uint8Array<[131,80,0,0,0,21,120,156,43,97,96,96,96,202,101,96,96,96,76,76,228,2,211,73,137,34,0,30,78,2,246]>
 ```
 
 ### Packer Options
@@ -138,7 +138,7 @@ All options are optional.
 |---|---|---|---|
 | poolSize | number | 1048576 | Initial size of the internal memory buffer in bytes |
 | useLegacyAtoms | boolean | false | If enabled, Atoms will be encoded using the legacy `ATOM_EXT` formats instead of the newer `ATOM_UTF8_EXT`. Legacy atoms are slightly faster but are limited to the latin1 character set |
-| cacheKeys | boolean | false | Cache repeated object keys for faster encoding |
+| cacheKeys | boolean | false | Cache object keys for faster encoding of repeated keys |
 | compression | [Compression Method](#compression-method) | false | Enable data compression and specify the compression method |
 | encoding | [Encoding Options](#encoding-options) | {} | Customize encoding behavior |
 
@@ -160,8 +160,8 @@ This object controls the encoding behavior and determines which JavaScript data 
 
 | option | values | default | description |
 |---|---|---|---|
-| string | "binary", "string", "char-string", "char-list" | "binary" | Encode strings as UTF-8 `BINARY_EXT`, UTF-8 `STRING_EXT`, Latin-1 `STRING_EXT` or a proper `LIST_EXT` of Unicode code-points |
-| key | "binary", "string", "char-string", "atom" | "atom" | Encode object keys as UTF-8 `BINARY_EXT`, UTF-8 `STRING_EXT`, Latin-1 `STRING_EXT` or `ATOM_*_EXT` |
+| string | "binary", "string", "char-string", "char-list" | "binary" | Encode strings as UTF-8 `BINARY_EXT`, UTF-8 `STRING_EXT`, Latin-1 `STRING_EXT` or a proper `LIST_EXT` of Unicode characters |
+| key | "binary", "string", "char-string", "atom" | "binary" | Encode object keys as UTF-8 `BINARY_EXT`, UTF-8 `STRING_EXT`, Latin-1 `STRING_EXT` or `ATOM_*_EXT`. Select `"atom"` explicitly for Erlang protocols expecting atom keys |
 | safeInt | "bigint", "float" | "bigint" | Whether integers between 32 and 53 bits should be encoded as `SMALL_BIG_EXT` or `NEW_FLOAT_EXT` |
 | safeBigInt | "number", "bigint" | "number" | Whether BigInts smaller than 32 bits should be encoded as `*_INTEGER_EXT` or `SMALL_BIG_EXT` |
 | null | "atom", "nil" | "atom" | Whether null should be encoded as the Atom `nil` or as `NIL_EXT` |
@@ -169,7 +169,7 @@ This object controls the encoding behavior and determines which JavaScript data 
 | infinity | "atom", "null", "ignore" | "atom" | Whether Infinity should be encoded as the Atoms `positive_infinity` and `negative_infinity`, converted to `null` or ignored\* |
 | nan | "atom", "null", "ignore" | "atom" | Whether NaN should be encoded as the Atom `nan`, converted to `null` or ignored |
 | buffer | "binary", "bitbinary", "string" | "binary" | Whether Buffers and TypedArrays should be encoded as `BINARY_EXT`, `BIT_BINARY_EXT` or `STRING_EXT` |
-| array | "list", "improperlist", "tuple" | "tuple" | Whether Arrays should be encoded as a proper nil-terminated `LIST_EXT`, an improper `LIST_EXT` or a `*_TUPLE_EXT` |
+| array | "list", "improperlist", "tuple" | "tuple" | Encode arrays as proper nil-terminated lists, improper lists or tuples. Empty arrays use `NIL_EXT` in either list mode and a zero-arity tuple in tuple mode |
 
 ### Packer Limitations
 
@@ -195,7 +195,7 @@ Values encoded as `STRING_EXT` are limited to 65,535 bytes according to the [ETF
 
 Values encoded as `ATOM`s are not subject to Erlang's hard limit of 255 characters per atom, instead they follow the wire format limit of 65,535 bytes. The Packer allows these atoms to be encoded, but atoms larger than 255 characters may fail to decode in a real Erlang application.
 
-Ignored values have their object properties omitted and array elements removed from the serialized output. If the top-level value is ignored, `pack()` encodes `NIL_EXT` (the empty list).
+Ignored values have their object properties omitted and array elements removed from the serialized output. Use `null` encoding if preserving indexes or keys is required. If the top-level value is ignored, `pack()` encodes `NIL_EXT` (the empty list).
 
 ## Unpacker
 
@@ -207,7 +207,7 @@ const unpacker = new Unpacker({
     // unpacker options
 });
 
-const etf = new Uint8Array([131,116,0,0,0,2,119,1,97,97,10,119,1,98,97,20]);
+const etf = new Uint8Array([131,116,0,0,0,2,109,0,0,0,1,97,97,10,109,0,0,0,1,98,97,20]);
 const js = unpacker.unpack(etf) // { a: 10, b: 20 }
 ```
 
@@ -218,7 +218,7 @@ const unpacker = new Unpacker({
     decompression: "decompressionstream"
 });
 
-const etf = new Uint8Array([131,80,0,0,0,15,120,156,43,97,96,96,96,42,103,76,76,228,42,103,76,74,20,1,0,21,222,3,10]);
+const etf = new Uint8Array([131,80,0,0,0,21,120,156,43,97,96,96,96,202,101,96,96,96,76,76,228,2,211,73,137,34,0,30,78,2,246]);
 const js = await unpacker.unpack(etf) // { a: 10, b: 20 }
 ```
 
@@ -230,9 +230,10 @@ All options are optional.
 |---|---|---|---|
 | decompression | [Decompression Method](#decompression-method) | - | Specify the decompression method |
 | decoding | [Decoding Options](#decoding-options) | {} | Customize decoding behavior |
-| atomTable | object | [Default Atom Table](#default-atom-table) | Defines substitutions for atom values, independently of object keys. Unmapped atoms are decoded as strings |
-| atomKeyTable | object | {} | Defines substitutions for atoms used as object keys, independently of `atomTable`. Unmapped atom keys are decoded as strings |
-| atomRegistration | boolean | true | Whether to cache newly encountered atoms in the separate value and key tables. This option slightly increases memory usage and makes first-time atoms slightly slower to decode but subsequent decodings of the same atom will become much faster (enabled by default) |
+| browserStrictLatin1 | boolean | true | Enforce decoding the full Latin-1 character set (bytes 0-255) in browsers. Disabling this improves performance for large strings in browsers but only guarantees correct decoding within the ASCII range (bytes `0-127`). |
+| atomTable | object | [Default Atom Table](#default-atom-table) | Defines substitutions for atom values, unmapped atoms are decoded as strings. Does not affect object keys |
+| cacheKeys | boolean | false | Cache object keys for faster decoding of repeated keys (string, binary and atom keys only) |
+| cacheAtoms | boolean | false | Cache atom values for faster decoding of repeated atoms (both atomTable and unmapped atoms) |
 
 ### Decompression Method
 
@@ -252,13 +253,15 @@ This object controls the decoding behavior and determines which ETF data types s
 
 | option | value | default | description |
 |---|---|---|---|
-| nil | "null", "array" | "null" | Whether `NIL_EXT` should be decoded as `null` or as `[]` |
-| string | "utf8", "latin1", "buffer", "uint8array", "array" | "utf8" | Whether `STRING_EXT` should be decoded as a string (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
-| binary | "utf8", "latin1", "buffer", "uint8array", "array" | "uint8array" | Whether `BINARY_EXT` should be decoded as a string (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
-| binaryKey | "utf8", "latin1" | unset | Decode `BINARY_EXT` object keys as text independently of `binary`. When unset, keys follow `binary` decoding and are coerced to property keys |
-| bitbinary | "utf8", "latin1", "buffer", "uint8array", "array" | "uint8array" | Whether `BIT_BINARY_EXT` should be decoded as a string (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
-| bigint | "bigint", "string" | "bigint" | Whether `*_BIG_EXT` should be decoded as bigint or as a stringified number |
-| safebigint | "number", "bigint", "string" | "bigint" | Whether `*_BIG_EXT` smaller than 53 bits should be decoded as a number, a bigint or a stringified number |
+| nil | "null", "array" | "array" | Whether `NIL_EXT` should be decoded as `null` or as `[]` |
+| string | "utf8", "latin1", "buffer", "uint8array", "array" | "latin1" | Whether `STRING_EXT` should be decoded as text (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
+| stringKey | "utf8", "latin1" | "latin1" | Whether `STRING_EXT` object keys should be decoded as utf8 or latin1 text |
+| binary | "utf8", "latin1", "buffer", "uint8array", "array" | "utf8" | Whether `BINARY_EXT` should be decoded as a text (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
+| binaryKey | "utf8", "latin1" | "utf8" | Whether `BINARY_EXT` object keys should be decoded as utf8 or latin1 text |
+| bitbinary | "utf8", "latin1", "buffer", "uint8array", "array" | "uint8array" | Whether `BIT_BINARY_EXT` should be decoded as a text (utf8 or latin1) or as bytes (Buffer, Uint8Array or Array) |
+| list | "array", "string" | "array" | Whether `LIST_EXT` should be decoded as array of values or as text (list of unicode characters). Supports both proper and improper lists |
+| bigint | "bigint", "string" | "bigint" | Whether `*_BIG_EXT` should be decoded as bigint or as a numeric string |
+| safebigint | "number", "bigint", "string" | "number" | Whether `*_BIG_EXT` integers within JavaScript's safe integer range should be decoded as number, bigint or numeric string |
 
 ### Default Atom Table
 
@@ -279,12 +282,6 @@ A table of atoms and the JavaScript values they represent. The default atom tabl
 ```
 
 If a custom `atomTable` is defined, it replaces the entire default table. To simply add an atom to the default table, copy it first and then add your atoms.
-
-`atomTable` applies only to atom values. Atoms used as object keys use a separate `atomKeyTable`, which defaults to `{}`. For example, the atom `true` decodes to the boolean `true` as a value, but remains the string `"true"` as an object key unless explicitly substituted in `atomKeyTable`. Key substitutions that are neither strings nor symbols are converted to strings.
-
-Both tables also work as accelerators: atoms in a table are faster to decode. Unmapped atoms are decoded as strings.
-
-If `atomRegistration` is enabled, newly encountered atoms will automatically be cached as strings in the appropriate value or key table, making them faster to decode the next time they appear.
 
 ### Unpacker Limitations
 
