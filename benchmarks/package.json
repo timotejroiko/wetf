@@ -1,0 +1,17 @@
+{
+  "name": "wetf-benchmarks",
+  "private": true,
+  "scripts": {
+    "benchmark": "node ./benchmark.js",
+    "benchmark:random": "node ./benchmark-random.js"
+  },
+  "devDependencies": {
+    "@devsnek/earl": "github:devsnek/earl#21353f8c55c83b37e668a565b515d09c5d5015e1",
+    "@typescord/ftee": "0.9.1",
+    "erlang_js": "2.0.7",
+    "erlpack": "0.1.4",
+    "erlpackjs": "1.0.1",
+    "etf.js": "1.0.1",
+    "wetf-npm": "npm:wetf@0.9.14"
+  }
+}

@@ -1,0 +1,112 @@
+{
+	"kind": "Listing",
+	"data": {
+		"after": "t3_example2",
+		"dist": 2,
+		"modhash": "",
+		"geo_filter": "",
+		"children": [
+			{
+				"kind": "t3",
+				"data": {
+					"id": "example1",
+					"name": "t3_example1",
+					"subreddit": "webdev",
+					"subreddit_id": "t5_example",
+					"subreddit_name_prefixed": "r/webdev",
+					"author": "example_builder",
+					"author_fullname": "t2_exampleuser",
+					"title": "What did you build this weekend? Share your projects",
+					"selftext": "I built a small offline-first reading list.\n\nFeatures:\n* Full-text search\n* Keyboard shortcuts\n* Import and export\n\nWhat are you working on? I'd love to hear about it.",
+					"selftext_html": "&lt;div class=\"md\"&gt;&lt;p&gt;I built a small offline-first reading list.&lt;/p&gt;&lt;/div&gt;",
+					"is_self": true,
+					"url": "https://www.reddit.com/r/webdev/comments/example1/what_did_you_build/",
+					"permalink": "/r/webdev/comments/example1/what_did_you_build/",
+					"domain": "self.webdev",
+					"score": 342,
+					"ups": 342,
+					"downs": 0,
+					"upvote_ratio": 0.97,
+					"num_comments": 86,
+					"created_utc": 1793188800,
+					"edited": false,
+					"over_18": false,
+					"spoiler": false,
+					"stickied": false,
+					"locked": false,
+					"archived": false,
+					"saved": false,
+					"hidden": false,
+					"visited": false,
+					"likes": null,
+					"thumbnail": "self",
+					"link_flair_text": "Discussion",
+					"link_flair_richtext": [{ "e": "text", "t": "Discussion" }],
+					"author_flair_text": null,
+					"all_awardings": [],
+					"media": null,
+					"secure_media": null,
+					"removed_by_category": null
+				}
+			},
+			{
+				"kind": "t3",
+				"data": {
+					"id": "example2",
+					"name": "t3_example2",
+					"subreddit": "webdev",
+					"subreddit_id": "t5_example",
+					"subreddit_name_prefixed": "r/webdev",
+					"author": "css_explorer",
+					"author_fullname": "t2_exampleauthor",
+					"title": "A practical guide to modern CSS layouts",
+					"selftext": "",
+					"selftext_html": null,
+					"is_self": false,
+					"url": "https://example.com/articles/modern-css-layouts",
+					"permalink": "/r/webdev/comments/example2/a_practical_guide/",
+					"domain": "example.com",
+					"score": 128,
+					"ups": 128,
+					"downs": 0,
+					"upvote_ratio": 0.94,
+					"num_comments": 23,
+					"created_utc": 1793185200,
+					"edited": false,
+					"over_18": false,
+					"spoiler": false,
+					"stickied": false,
+					"locked": false,
+					"archived": false,
+					"saved": false,
+					"hidden": false,
+					"visited": false,
+					"likes": null,
+					"thumbnail": "https://images.example.com/css-layouts-small.jpg",
+					"thumbnail_width": 140,
+					"thumbnail_height": 93,
+					"preview": {
+						"images": [{
+							"source": { "url": "https://images.example.com/css-layouts.jpg", "width": 1200, "height": 800 },
+							"resolutions": [
+								{ "url": "https://images.example.com/css-layouts-320.jpg", "width": 320, "height": 213 },
+								{ "url": "https://images.example.com/css-layouts-640.jpg", "width": 640, "height": 426 }
+							],
+							"variants": {},
+							"id": "example-preview-image"
+						}],
+						"enabled": true
+					},
+					"link_flair_text": "Resource",
+					"link_flair_richtext": [{ "e": "text", "t": "Resource" }],
+					"author_flair_text": null,
+					"all_awardings": [],
+					"media": null,
+					"secure_media": null,
+					"removed_by_category": null
+				}
+			}
+		],
+		"before": null
+	}
+}

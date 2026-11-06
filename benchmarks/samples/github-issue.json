@@ -1,0 +1,48 @@
+{
+	"id": 1234567890,
+	"node_id": "I_kwDOExample123",
+	"url": "https://api.github.com/repos/example/dashboard/issues/42",
+	"repository_url": "https://api.github.com/repos/example/dashboard",
+	"html_url": "https://github.com/example/dashboard/issues/42",
+	"number": 42,
+	"title": "Search results lose the selected filter after navigation",
+	"user": {
+		"login": "example-user",
+		"id": 123456,
+		"node_id": "MDQ6VXNlcjEyMzQ1Ng==",
+		"avatar_url": "https://avatars.example.com/u/123456",
+		"html_url": "https://github.com/example-user",
+		"type": "User",
+		"site_admin": false
+	},
+	"labels": [
+		{ "id": 1001, "node_id": "LA_example1", "url": "https://api.github.com/repos/example/dashboard/labels/bug", "name": "bug", "color": "d73a4a", "default": true, "description": "Something is not working" },
+		{ "id": 1002, "node_id": "LA_example2", "url": "https://api.github.com/repos/example/dashboard/labels/frontend", "name": "frontend", "color": "5319e7", "default": false, "description": null }
+	],
+	"state": "open",
+	"locked": false,
+	"assignee": null,
+	"assignees": [],
+	"milestone": {
+		"id": 501,
+		"number": 3,
+		"title": "2.4.1",
+		"description": "Search and navigation fixes",
+		"state": "open",
+		"open_issues": 7,
+		"closed_issues": 12,
+		"created_at": "2026-10-20T08:00:00Z",
+		"updated_at": "2026-10-28T14:20:00Z",
+		"due_on": "2026-11-06T00:00:00Z",
+		"closed_at": null
+	},
+	"comments": 4,
+	"created_at": "2026-10-27T10:15:00Z",
+	"updated_at": "2026-10-28T14:20:00Z",
+	"closed_at": null,
+	"author_association": "CONTRIBUTOR",
+	"active_lock_reason": null,
+	"body": "## Steps to reproduce\n1. Open the project search.\n2. Select the `open` filter.\n3. Open a result and navigate back.\n\nExpected: the selected filter remains active.\nActual: the filter resets to `all`.\n\nReproduced in Firefox and Chromium on Linux.",
+	"reactions": { "url": "https://api.github.com/repos/example/dashboard/issues/42/reactions", "total_count": 5, "+1": 4, "-1": 0, "laugh": 0, "hooray": 0, "confused": 0, "heart": 1, "rocket": 0, "eyes": 0 },
+	"state_reason": null
+}

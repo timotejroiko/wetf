@@ -312,6 +312,7 @@ A decent amount of JS trickery went into creating **Wetf** in order to make it f
 | [slack-message](benchmarks/samples/slack-message.json) | **683** | 7761 | 8310 | 8880 | 7979 | 1562 | 3494 |
 | [spotify-track](benchmarks/samples/spotify-track.json) | **635** | 8914 | 7847 | 8453 | 7655 | 1475 | 3530 |
 | [stripe-event](benchmarks/samples/stripe-event.json) | **649** | 9641 | 8986 | 9140 | 8692 | 1561 | 3117 |
+| [tiny](benchmarks/samples/tiny.js) | **91** | 1290 | 1064 | ERROR | 1035 | 459 | 1481 |
 
 ### Decoding
 
@@ -328,6 +329,7 @@ A decent amount of JS trickery went into creating **Wetf** in order to make it f
 | [slack-message](benchmarks/samples/slack-message.json) | **769** | 3312 | 3413 | 3408 | 3012 | 2958 | 1572 |
 | [spotify-track](benchmarks/samples/spotify-track.json) | **755** | 3102 | 3442 | 3388 | 3325 | 2875 | 1599 |
 | [stripe-event](benchmarks/samples/stripe-event.json) | **952** | 3706 | 4093 | 3578 | 3899 | 3276 | 1841 |
+| [tiny](benchmarks/samples/tiny.js) | **65** | 301 | 376 | 437 | 298 | 265 | 233 |
 
 ### Running
 

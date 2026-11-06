@@ -1,0 +1,159 @@
+{
+	"id": "1000000000000000000",
+	"name": "Example Developer Community",
+	"icon": "abcdef0123456789abcdef0123456789",
+	"splash": null,
+	"discovery_splash": null,
+	"owner_id": "2000000000000000001",
+	"afk_channel_id": null,
+	"afk_timeout": 300,
+	"verification_level": 2,
+	"default_message_notifications": 1,
+	"explicit_content_filter": 2,
+	"roles": [
+		{
+			"id": "1000000000000000000",
+			"name": "@everyone",
+			"color": 0,
+			"hoist": false,
+			"position": 0,
+			"permissions": "104324673",
+			"managed": false,
+			"mentionable": false,
+			"flags": 0
+		},
+		{
+			"id": "3000000000000000001",
+			"name": "Maintainer",
+			"color": 5793266,
+			"hoist": true,
+			"position": 2,
+			"permissions": "1099511627775",
+			"managed": false,
+			"mentionable": true,
+			"flags": 0
+		},
+		{
+			"id": "3000000000000000002",
+			"name": "Contributor",
+			"color": 5763719,
+			"hoist": true,
+			"position": 1,
+			"permissions": "104324673",
+			"managed": false,
+			"mentionable": true,
+			"flags": 0
+		}
+	],
+	"emojis": [
+		{
+			"id": "5000000000000000001",
+			"name": "shipit",
+			"roles": [],
+			"require_colons": true,
+			"managed": false,
+			"animated": false,
+			"available": true
+		}
+	],
+	"features": ["COMMUNITY", "NEWS", "WELCOME_SCREEN_ENABLED"],
+	"mfa_level": 1,
+	"application_id": null,
+	"system_channel_id": "1000000000000000002",
+	"system_channel_flags": 0,
+	"rules_channel_id": "1000000000000000003",
+	"max_presences": null,
+	"max_members": 500000,
+	"vanity_url_code": null,
+	"description": "A place to build, learn, and share open-source projects.",
+	"banner": null,
+	"premium_tier": 1,
+	"premium_subscription_count": 4,
+	"preferred_locale": "en-US",
+	"public_updates_channel_id": "1000000000000000004",
+	"nsfw_level": 0,
+	"premium_progress_bar_enabled": true,
+	"joined_at": "2024-02-10T12:30:00.000000+00:00",
+	"large": false,
+	"unavailable": false,
+	"member_count": 842,
+	"channels": [
+		{
+			"id": "1000000000000000010",
+			"type": 4,
+			"name": "Community",
+			"position": 0,
+			"permission_overwrites": []
+		},
+		{
+			"id": "1000000000000000001",
+			"type": 0,
+			"name": "general",
+			"position": 0,
+			"parent_id": "1000000000000000010",
+			"topic": "Introductions, questions, and project updates",
+			"nsfw": false,
+			"rate_limit_per_user": 5,
+			"last_message_id": "1421069234567890123",
+			"permission_overwrites": []
+		},
+		{
+			"id": "1000000000000000003",
+			"type": 0,
+			"name": "rules",
+			"position": 1,
+			"parent_id": "1000000000000000010",
+			"topic": null,
+			"nsfw": false,
+			"rate_limit_per_user": 0,
+			"permission_overwrites": [
+				{ "id": "1000000000000000000", "type": 0, "allow": "1024", "deny": "2048" }
+			]
+		},
+		{
+			"id": "1000000000000000020",
+			"type": 2,
+			"name": "Pair programming",
+			"position": 2,
+			"parent_id": "1000000000000000010",
+			"bitrate": 64000,
+			"user_limit": 8,
+			"rtc_region": null,
+			"permission_overwrites": []
+		}
+	],
+	"threads": [],
+	"members": [
+		{
+			"user": { "id": "2000000000000000001", "username": "alex", "discriminator": "0", "avatar": null, "bot": false },
+			"nick": "Alex",
+			"roles": ["3000000000000000001"],
+			"joined_at": "2024-02-10T12:30:00.000000+00:00",
+			"premium_since": null,
+			"deaf": false,
+			"mute": false,
+			"pending": false
+		},
+		{
+			"user": { "id": "2000000000000000002", "username": "sam", "discriminator": "0", "avatar": null, "bot": false },
+			"nick": null,
+			"roles": ["3000000000000000002"],
+			"joined_at": "2025-07-18T09:15:00.000000+00:00",
+			"premium_since": null,
+			"deaf": false,
+			"mute": false,
+			"pending": false
+		}
+	],
+	"presences": [
+		{
+			"user": { "id": "2000000000000000001" },
+			"status": "online",
+			"activities": [{ "name": "Visual Studio Code", "type": 0, "created_at": 1793203200000 }],
+			"client_status": { "desktop": "online", "mobile": "idle" }
+		}
+	],
+	"voice_states": [],
+	"stage_instances": [],
+	"guild_scheduled_events": []
+}

@@ -1,0 +1,57 @@
+{
+	"token": "synthetic-verification-token",
+	"team_id": "TEXAMPLE01",
+	"api_app_id": "AEXAMPLE01",
+	"type": "event_callback",
+	"event_id": "EvEXAMPLE01",
+	"event_time": 1793203200,
+	"authorizations": [
+		{ "enterprise_id": null, "team_id": "TEXAMPLE01", "user_id": "UEXAMPLE01", "is_bot": true, "is_enterprise_install": false }
+	],
+	"is_ext_shared_channel": false,
+	"event_context": "synthetic-event-context",
+	"event": {
+		"type": "message",
+		"user": "UEXAMPLE02",
+		"channel": "CEXAMPLE01",
+		"channel_type": "channel",
+		"text": "Deployment complete ✅ <https://example.com/deployments/42|View deployment>\nThanks <@UEXAMPLE03> for reviewing!",
+		"ts": "1793203200.000200",
+		"event_ts": "1793203200.000200",
+		"client_msg_id": "cf39c503-0ebe-4f10-a9f8-46af05c63612",
+		"blocks": [
+			{
+				"type": "rich_text",
+				"block_id": "example-block",
+				"elements": [
+					{
+						"type": "rich_text_section",
+						"elements": [
+							{ "type": "text", "text": "Deployment complete " },
+							{ "type": "emoji", "name": "white_check_mark" },
+							{ "type": "text", "text": " " },
+							{ "type": "link", "url": "https://example.com/deployments/42", "text": "View deployment" },
+							{ "type": "text", "text": "\nThanks " },
+							{ "type": "user", "user_id": "UEXAMPLE03" },
+							{ "type": "text", "text": " for reviewing!" }
+						]
+					}
+				]
+			}
+		],
+		"attachments": [
+			{
+				"fallback": "Production deployment: healthy",
+				"color": "36a64f",
+				"title": "Production deployment",
+				"title_link": "https://example.com/deployments/42",
+				"fields": [
+					{ "title": "Environment", "value": "production", "short": true },
+					{ "title": "Duration", "value": "42 seconds", "short": true }
+				],
+				"footer": "Example CI",
+				"ts": 1793203200
+			}
+		]
+	}
+}

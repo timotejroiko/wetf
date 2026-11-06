@@ -1,0 +1,71 @@
+{
+	"data": {
+		"viewer": {
+			"__typename": "User",
+			"id": "user_42",
+			"displayName": "Sam Chen",
+			"email": "sam@example.com",
+			"avatarUrl": null,
+			"preferences": { "theme": "dark", "locale": "en-US", "emailNotifications": false },
+			"organizations": {
+				"edges": [
+					{
+						"cursor": "b3JnOjEwMA==",
+						"node": {
+							"__typename": "Organization",
+							"id": "org_100",
+							"name": "Example Studio",
+							"slug": "example-studio",
+							"plan": "PRO",
+							"projects": {
+								"totalCount": 18,
+								"edges": [
+									{
+										"cursor": "cHJvamVjdDoxMDE=",
+										"node": {
+											"__typename": "Project",
+											"id": "project_101",
+											"name": "Customer dashboard",
+											"description": "Account management and usage reporting",
+											"archived": false,
+											"updatedAt": "2026-10-28T13:42:00Z",
+											"metrics": { "openTasks": 12, "completedTasks": 84, "completionRate": 0.875 },
+											"members": [
+												{ "id": "user_42", "displayName": "Sam Chen", "role": "OWNER" },
+												{ "id": "user_43", "displayName": "Alex Rivera", "role": "EDITOR" }
+											]
+										}
+									},
+									{
+										"cursor": "cHJvamVjdDoxMDI=",
+										"node": {
+											"__typename": "Project",
+											"id": "project_102",
+											"name": "Mobile companion",
+											"description": null,
+											"archived": false,
+											"updatedAt": "2026-10-27T09:18:00Z",
+											"metrics": null,
+											"members": []
+										}
+									}
+								],
+								"pageInfo": { "hasNextPage": true, "hasPreviousPage": false, "startCursor": "cHJvamVjdDoxMDE=", "endCursor": "cHJvamVjdDoxMDI=" }
+							}
+						}
+					}
+				],
+				"pageInfo": { "hasNextPage": false, "endCursor": "b3JnOjEwMA==" }
+			}
+		}
+	},
+	"errors": [
+		{
+			"message": "Project metrics are temporarily unavailable",
+			"locations": [{ "line": 24, "column": 13 }],
+			"path": ["viewer", "organizations", "edges", 0, "node", "projects", "edges", 1, "node", "metrics"],
+			"extensions": { "code": "SERVICE_UNAVAILABLE" }
+		}
+	],
+	"extensions": { "requestId": "req_synthetic_graphql_42", "cost": { "requestedQueryCost": 42, "actualQueryCost": 28 } }
+}

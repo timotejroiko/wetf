@@ -1,0 +1,51 @@
+{
+	"type": "FeatureCollection",
+	"bbox": [-122.682, 45.51, -122.671, 45.523],
+	"features": [
+		{
+			"type": "Feature",
+			"id": "place-101",
+			"geometry": { "type": "Point", "coordinates": [-122.6784, 45.5152] },
+			"properties": {
+				"name": "Central Café",
+				"category": "coffee",
+				"rating": 4.7,
+				"review_count": 128,
+				"open_now": true,
+				"website": "https://cafe.example.com",
+				"tags": ["wifi", "outdoor-seating", "wheelchair-accessible"],
+				"address": { "street": "123 Example Avenue", "city": "Portland", "postal_code": "97201" }
+			}
+		},
+		{
+			"type": "Feature",
+			"id": "route-201",
+			"geometry": {
+				"type": "LineString",
+				"coordinates": [
+					[-122.6784, 45.5152],
+					[-122.6771, 45.5164],
+					[-122.6758, 45.5178],
+					[-122.6742, 45.5191],
+					[-122.6721, 45.5213]
+				]
+			},
+			"properties": { "name": "Riverside walk", "distance_m": 1240.5, "duration_s": 960, "accessible": true, "elevation_gain_m": 8.3 }
+		},
+		{
+			"type": "Feature",
+			"id": "area-301",
+			"geometry": {
+				"type": "Polygon",
+				"coordinates": [[
+					[-122.682, 45.51],
+					[-122.671, 45.51],
+					[-122.671, 45.523],
+					[-122.682, 45.523],
+					[-122.682, 45.51]
+				]]
+			},
+			"properties": { "name": "Downtown delivery zone", "active": true, "delivery_fee": 3.5, "minimum_order": 15, "restrictions": null }
+		}
+	]
+}

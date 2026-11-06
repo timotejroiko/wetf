@@ -1,6 +1,6 @@
 {
   "name": "wetf",
-  "version": "0.9.14",
+  "version": "1.0.0",
   "description": "A highly customizable and stupid fast ETF (External Term Format) encoder/decoder for NodeJS and Browsers.",
   "keywords": [
     "etf",
@@ -25,7 +25,8 @@
     "./esm",
     "./umd",
     "./types",
-    "./scripts"
+    "./scripts",
+    "./benchmarks"
   ],
   "exports": {
     ".": {
@@ -48,23 +49,16 @@
     }
   },
   "scripts": {
-    "benchmark": "node ./scripts/benchmark.js",
-    "benchmark2": "node ./scripts/benchmark2.js",
+    "benchmark": "node ./benchmarks/benchmark.js",
     "build": "npm run dist && npm run types && npm run test",
     "test": "eslint index.js src && tsc -p ./ && node ./scripts/test.js",
     "types": "tsc -p ./ --noEmit false --emitDeclarationOnly true",
     "dist": "node ./scripts/dist.js"
   },
   "devDependencies": {
-    "@devsnek/earl": "github:devsnek/earl",
-    "@types/node": "^22.1.0",
-    "@typescord/ftee": "^0.9.1",
-    "erlang_js": "^2.0.5",
-    "erlpackjs": "^1.0.1",
-    "eslint": "^9.8.0",
-    "etf.js": "^1.0.1",
-    "nanobench": "^3.0.0",
-    "typescript": "^5.5.4",
-    "uglify-js": "^3.19.1"
+    "@types/node": "^22.20.5",
+    "eslint": "^9.39.5",
+    "typescript": "^5.9.3",
+    "uglify-js": "^3.19.3"
   }
 }

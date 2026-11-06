@@ -1,0 +1,74 @@
+{
+	"id": "1421069234567890123",
+	"channel_id": "1000000000000000001",
+	"guild_id": "1000000000000000000",
+	"author": {
+		"id": "2000000000000000001",
+		"username": "alex",
+		"discriminator": "0",
+		"global_name": "Alex Rivera",
+		"avatar": "ab1234567890abcdef1234567890abcd",
+		"bot": false,
+		"public_flags": 256
+	},
+	"member": {
+		"nick": "Alex",
+		"roles": ["3000000000000000001", "3000000000000000002"],
+		"joined_at": "2024-02-10T12:30:00.000000+00:00",
+		"premium_since": null,
+		"deaf": false,
+		"mute": false,
+		"pending": false
+	},
+	"content": "Release notes are ready, <@2000000000000000002>! Café meetup at 18:00 — bring your laptop. 🚀\nhttps://example.com/releases/2.4",
+	"timestamp": "2026-10-28T16:42:12.345000+00:00",
+	"edited_timestamp": null,
+	"tts": false,
+	"mention_everyone": false,
+	"mentions": [
+		{
+			"id": "2000000000000000002",
+			"username": "sam",
+			"discriminator": "0",
+			"global_name": "Sam Chen",
+			"avatar": null
+		}
+	],
+	"mention_roles": [],
+	"attachments": [
+		{
+			"id": "4000000000000000001",
+			"filename": "release-preview.png",
+			"description": "Preview of the new dashboard",
+			"content_type": "image/png",
+			"size": 184392,
+			"url": "https://cdn.example.com/attachments/release-preview.png",
+			"proxy_url": "https://media.example.com/attachments/release-preview.png",
+			"height": 720,
+			"width": 1280,
+			"ephemeral": false
+		}
+	],
+	"embeds": [
+		{
+			"type": "rich",
+			"title": "Version 2.4 release notes",
+			"description": "Faster search, improved accessibility, and a refreshed dashboard.",
+			"url": "https://example.com/releases/2.4",
+			"color": 5793266,
+			"fields": [
+				{ "name": "Status", "value": "Ready for review", "inline": true },
+				{ "name": "Build", "value": "2026.10.28.3", "inline": true }
+			],
+			"footer": { "text": "Release automation" }
+		}
+	],
+	"reactions": [
+		{ "count": 5, "me": false, "emoji": { "id": null, "name": "👍" } },
+		{ "count": 2, "me": true, "emoji": { "id": "5000000000000000001", "name": "shipit" } }
+	],
+	"pinned": false,
+	"type": 0,
+	"flags": 0,
+	"components": []
+}

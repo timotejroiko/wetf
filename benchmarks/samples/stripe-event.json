@@ -1,0 +1,53 @@
+{
+	"id": "evt_synthetic_checkout_completed",
+	"object": "event",
+	"api_version": "2024-06-20",
+	"created": 1793203200,
+	"livemode": false,
+	"pending_webhooks": 1,
+	"request": { "id": "req_synthetic_checkout", "idempotency_key": "checkout-example-42" },
+	"type": "checkout.session.completed",
+	"data": {
+		"object": {
+			"id": "cs_test_synthetic_checkout",
+			"object": "checkout.session",
+			"amount_subtotal": 4990,
+			"amount_total": 5489,
+			"automatic_tax": { "enabled": true, "liability": { "type": "self" }, "status": "complete" },
+			"billing_address_collection": "required",
+			"cancel_url": "https://shop.example.com/cart",
+			"client_reference_id": "order_1042",
+			"consent": null,
+			"created": 1793202900,
+			"currency": "usd",
+			"customer": "cus_synthetic_customer",
+			"customer_details": {
+				"address": { "city": "Portland", "country": "US", "line1": "123 Example Street", "line2": null, "postal_code": "97201", "state": "OR" },
+				"email": "alex@example.com",
+				"name": "Alex Rivera",
+				"phone": null,
+				"tax_exempt": "none",
+				"tax_ids": []
+			},
+			"expires_at": 1793289300,
+			"invoice": null,
+			"livemode": false,
+			"locale": "en",
+			"metadata": { "order_id": "1042", "source": "web", "campaign": "autumn" },
+			"mode": "payment",
+			"payment_intent": "pi_synthetic_payment",
+			"payment_link": null,
+			"payment_method_types": ["card", "link"],
+			"payment_status": "paid",
+			"phone_number_collection": { "enabled": false },
+			"recovered_from": null,
+			"shipping_options": [],
+			"status": "complete",
+			"submit_type": "pay",
+			"subscription": null,
+			"success_url": "https://shop.example.com/orders/1042?session_id={CHECKOUT_SESSION_ID}",
+			"total_details": { "amount_discount": 0, "amount_shipping": 0, "amount_tax": 499 },
+			"url": null
+		}
+	}
+}

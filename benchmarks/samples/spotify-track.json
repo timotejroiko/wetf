@@ -1,0 +1,55 @@
+{
+	"album": {
+		"album_type": "album",
+		"total_tracks": 12,
+		"available_markets": ["AU", "CA", "DE", "FR", "GB", "JP", "US"],
+		"external_urls": { "spotify": "https://open.spotify.com/album/0ExampleAlbum0000000000" },
+		"href": "https://api.spotify.com/v1/albums/0ExampleAlbum0000000000",
+		"id": "0ExampleAlbum0000000000",
+		"images": [
+			{ "url": "https://images.example.com/album-640.jpg", "height": 640, "width": 640 },
+			{ "url": "https://images.example.com/album-300.jpg", "height": 300, "width": 300 },
+			{ "url": "https://images.example.com/album-64.jpg", "height": 64, "width": 64 }
+		],
+		"name": "City Lights",
+		"release_date": "2026-09-18",
+		"release_date_precision": "day",
+		"type": "album",
+		"uri": "spotify:album:0ExampleAlbum0000000000",
+		"artists": [
+			{
+				"external_urls": { "spotify": "https://open.spotify.com/artist/0ExampleArtist00000000" },
+				"href": "https://api.spotify.com/v1/artists/0ExampleArtist00000000",
+				"id": "0ExampleArtist00000000",
+				"name": "The Example Band",
+				"type": "artist",
+				"uri": "spotify:artist:0ExampleArtist00000000"
+			}
+		]
+	},
+	"artists": [
+		{
+			"external_urls": { "spotify": "https://open.spotify.com/artist/0ExampleArtist00000000" },
+			"href": "https://api.spotify.com/v1/artists/0ExampleArtist00000000",
+			"id": "0ExampleArtist00000000",
+			"name": "The Example Band",
+			"type": "artist",
+			"uri": "spotify:artist:0ExampleArtist00000000"
+		}
+	],
+	"available_markets": ["AU", "CA", "DE", "FR", "GB", "JP", "US"],
+	"disc_number": 1,
+	"duration_ms": 214320,
+	"explicit": false,
+	"external_ids": { "isrc": "USXXX2600001" },
+	"external_urls": { "spotify": "https://open.spotify.com/track/0ExampleTrack000000000" },
+	"href": "https://api.spotify.com/v1/tracks/0ExampleTrack000000000",
+	"id": "0ExampleTrack000000000",
+	"is_local": false,
+	"name": "Late Night Train",
+	"popularity": 67,
+	"preview_url": null,
+	"track_number": 3,
+	"type": "track",
+	"uri": "spotify:track:0ExampleTrack000000000"
+}
