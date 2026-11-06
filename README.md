@@ -299,7 +299,7 @@ A decent amount of JS trickery went into creating **Wetf** in order to make it f
 
 ### Encoding
 
-| Sample | **[wetf 1.0.0](https://www.npmjs.com/package/wetf/v/1.0.0)** | [etf.js](https://www.npmjs.com/package/etf.js) | [erlpackjs](https://www.npmjs.com/package/erlpackjs) | [erlang_js](https://www.npmjs.com/package/erlang_js) | [@devsnek/earl](https://www.npmjs.com/package/@devsnek/earl) | [@typescord/ftee](https://www.npmjs.com/package/@typescord/ftee) | [erlpack](https://www.npmjs.com/package/erlpack) |
+| Sample | **[wetf](https://www.npmjs.com/package/wetf/v/1.0.0)** | [etf.js](https://www.npmjs.com/package/etf.js) | [erlpackjs](https://www.npmjs.com/package/erlpackjs) | [erlang_js](https://www.npmjs.com/package/erlang_js) | [@devsnek/earl](https://www.npmjs.com/package/@devsnek/earl) | [@typescord/ftee](https://www.npmjs.com/package/@typescord/ftee) | [erlpack](https://www.npmjs.com/package/erlpack) |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | [discord-guild](benchmarks/samples/discord-guild.json) | **1446** | 14073 | 20125 | 21735 | 21825 | 3465 | 8711 |
 | [discord-message](benchmarks/samples/discord-message.json) | **796** | 8821 | 9576 | 10388 | 10082 | 1778 | 4662 |
@@ -316,7 +316,7 @@ A decent amount of JS trickery went into creating **Wetf** in order to make it f
 
 ### Decoding
 
-| Sample | [wetf 1.0.0](https://www.npmjs.com/package/wetf/v/1.0.0) | [etf.js](https://www.npmjs.com/package/etf.js) | [erlpackjs](https://www.npmjs.com/package/erlpackjs) | [erlang_js](https://www.npmjs.com/package/erlang_js) | [@devsnek/earl](https://www.npmjs.com/package/@devsnek/earl) | [@typescord/ftee](https://www.npmjs.com/package/@typescord/ftee) | [erlpack](https://www.npmjs.com/package/erlpack) |
+| Sample | [wetf](https://www.npmjs.com/package/wetf/v/1.0.0) | [etf.js](https://www.npmjs.com/package/etf.js) | [erlpackjs](https://www.npmjs.com/package/erlpackjs) | [erlang_js](https://www.npmjs.com/package/erlang_js) | [@devsnek/earl](https://www.npmjs.com/package/@devsnek/earl) | [@typescord/ftee](https://www.npmjs.com/package/@typescord/ftee) | [erlpack](https://www.npmjs.com/package/erlpack) |
 |---|---:|---:|---:|---:|---:|---:|---:|
 | [discord-guild](benchmarks/samples/discord-guild.json) | **1966** | 6250 | 8362 | 7487 | 8716 | 7926 | 6563 |
 | [discord-message](benchmarks/samples/discord-message.json) | **895** | 3121 | 4516 | 3993 | 4288 | 4040 | 2617 |
