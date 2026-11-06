@@ -289,44 +289,57 @@ If a custom `atomTable` is defined, it replaces the entire default table. To sim
 
 The Unpacker currently cannot unpack the following ETF types:
 
-`Distribution Header`, `ATOM_CACHE_REF`, `FLOAT_EXT`, `PORT_EXT`, `NEW_PORT_EXT`, `V4_PORT_EXT`, `PID_EXT`, `NEW_PID_EXT`, `REFERENCE_EXT`, `NEW_REFERENCE_EXT`, `NEWER_REFERENCE_EXT`, `FUN_EXT`, `NEW_FUN_EXT`, `EXPORT_EXT`, `RECORD_EXT`
+`Distribution Header`, `ATOM_CACHE_REF`, `PORT_EXT`, `NEW_PORT_EXT`, `V4_PORT_EXT`, `PID_EXT`, `NEW_PID_EXT`, `REFERENCE_EXT`, `NEW_REFERENCE_EXT`, `NEWER_REFERENCE_EXT`, `FUN_EXT`, `NEW_FUN_EXT`, `EXPORT_EXT`, `RECORD_EXT`
 
 Support for these types might be added in the future, feel free to open a feature request or issue.
 
 ## Benchmark
 
-A decent amount of JS abuse and trickery went into creating **Wetf** in order to make it truly fast. In this benchmark, several libraries were tested by measuring the time taken to encode the same sample object 1 million times and then the time taken to decode the result another 1 million times. Here are the results:
+A decent amount of JS trickery went into creating **Wetf** in order to make it fast. In this benchmark, several libraries were compared by measuring the time taken to process each sample data file **100,000** times. The results below are the lowest recorded times in milliseconds after 5 repeated runs and were measured on Node.js v26.13.0, Windows x64, Intel Core i7-12700H.
 
-### Sample object
+### Encoding
 
-```js
-const obj = {
-    a: 10,
-    b: 20.4857394875938,
-    c: "02fh203jf0293",
-    d: [32,42352,"3523",234],
-    e: { r: 4345, g: "fwefw" },
-    n: true,
-    f: false,
-    z: null,
-    k: 837028304n
-}
+| Sample | **[wetf 1.0.0](https://www.npmjs.com/package/wetf/v/1.0.0)** | [etf.js](https://www.npmjs.com/package/etf.js) | [erlpackjs](https://www.npmjs.com/package/erlpackjs) | [erlang_js](https://www.npmjs.com/package/erlang_js) | [@devsnek/earl](https://www.npmjs.com/package/@devsnek/earl) | [@typescord/ftee](https://www.npmjs.com/package/@typescord/ftee) | [erlpack](https://www.npmjs.com/package/erlpack) |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| [discord-guild](benchmarks/samples/discord-guild.json) | **1446** | 14073 | 20125 | 21735 | 21825 | 3465 | 8711 |
+| [discord-message](benchmarks/samples/discord-message.json) | **796** | 8821 | 9576 | 10388 | 10082 | 1778 | 4662 |
+| [geojson-features](benchmarks/samples/geojson-features.json) | **545** | 5172 | 5059 | 8767 | 4869 | 1272 | 4074 |
+| [github-issue](benchmarks/samples/github-issue.json) | **652** | 7834 | 8658 | 8649 | 8458 | 1532 | 3107 |
+| [graphql-response](benchmarks/samples/graphql-response.json) | **776** | 8732 | 10052 | 11586 | 9911 | 1810 | 3934 |
+| [openweather-current](benchmarks/samples/openweather-current.json) | **291** | 2985 | 2806 | 4172 | 2716 | 862 | 2225 |
+| [reddit-listing](benchmarks/samples/reddit-listing.json) | **1117** | 13399 | 16782 | 16481 | 16342 | 2471 | 4914 |
+| [shopify-order](benchmarks/samples/shopify-order.json) | **1156** | 14062 | 17100 | 17345 | 15610 | 3178 | 5360 |
+| [slack-message](benchmarks/samples/slack-message.json) | **683** | 7761 | 8310 | 8880 | 7979 | 1562 | 3494 |
+| [spotify-track](benchmarks/samples/spotify-track.json) | **635** | 8914 | 7847 | 8453 | 7655 | 1475 | 3530 |
+| [stripe-event](benchmarks/samples/stripe-event.json) | **649** | 9641 | 8986 | 9140 | 8692 | 1561 | 3117 |
+
+### Decoding
+
+| Sample | [wetf 1.0.0](https://www.npmjs.com/package/wetf/v/1.0.0) | [etf.js](https://www.npmjs.com/package/etf.js) | [erlpackjs](https://www.npmjs.com/package/erlpackjs) | [erlang_js](https://www.npmjs.com/package/erlang_js) | [@devsnek/earl](https://www.npmjs.com/package/@devsnek/earl) | [@typescord/ftee](https://www.npmjs.com/package/@typescord/ftee) | [erlpack](https://www.npmjs.com/package/erlpack) |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| [discord-guild](benchmarks/samples/discord-guild.json) | **1966** | 6250 | 8362 | 7487 | 8716 | 7926 | 6563 |
+| [discord-message](benchmarks/samples/discord-message.json) | **895** | 3121 | 4516 | 3993 | 4288 | 4040 | 2617 |
+| [geojson-features](benchmarks/samples/geojson-features.json) | **532** | 1765 | 2461 | 4825 | 2324 | 2221 | 1919 |
+| [github-issue](benchmarks/samples/github-issue.json) | **882** | 2706 | 3892 | 3256 | 3584 | 3186 | 1738 |
+| [graphql-response](benchmarks/samples/graphql-response.json) | **871** | 2888 | 4083 | 4113 | 3964 | 3478 | 2091 |
+| [openweather-current](benchmarks/samples/openweather-current.json) | **297** | 1106 | 1748 | 2317 | 1500 | 1566 | 942 |
+| [reddit-listing](benchmarks/samples/reddit-listing.json) | **1539** | 5296 | 6725 | 5846 | 6263 | 5396 | 3021 |
+| [shopify-order](benchmarks/samples/shopify-order.json) | **1488** | 5317 | 6909 | 7658 | 6025 | 5714 | 3193 |
+| [slack-message](benchmarks/samples/slack-message.json) | **769** | 3312 | 3413 | 3408 | 3012 | 2958 | 1572 |
+| [spotify-track](benchmarks/samples/spotify-track.json) | **755** | 3102 | 3442 | 3388 | 3325 | 2875 | 1599 |
+| [stripe-event](benchmarks/samples/stripe-event.json) | **952** | 3706 | 4093 | 3578 | 3899 | 3276 | 1841 |
+
+### Running
+
+Benchmark scripts and samples are included in the published package. Their dependencies are in [`benchmarks`](benchmarks/package.json) and are not installed by default. Install them before running comparisons:
+
+```sh
+npm install --prefix benchmarks
+npm run benchmark -- --help
+npm run benchmark -- --sample discord-guild --lib wetf --iterations 100000 --rounds 5
+npm run benchmark -- --sample all --lib all --iterations 9999 --rounds 5
 ```
-
-### Results
-
-| Library | Encoding Performance | Decoding Performance |
-|---|---|---|
-| [erlpack](https://github.com/discord/erlpack) | 34.39s (29078 op/s) | 6.88s (145348 op/s) |
-| [etf.js](https://github.com/vladfrangu/etf.js) | 27.24s (36710 op/s) | 7.09s (141043 op/s) |
-| [erlpackjs](https://github.com/SemperFortis/erlpackjs) | 20.57s (48614 op/s) | 8.05s (124223 op/s) |
-| [erlang_js](https://github.com/okeuday/erlang_js) | 88.85s (11254 op/s) | 49.08s (20374 op/s) |
-| [@devsnek/earl](https://github.com/devsnek/earl) | 19.83s (50428 op/s) | 7.09s (140847 op/s) |
-| [@typescord/ftee](https://github.com/typescord/ftee) | 8.94s (111856 op/s) | 9.31s (107411 op/s) |
-| [wetf](https://github.com/timotejroiko/wetf) | 1.48s (675675 op/s) | 1.28s (781250 op/s) |
-
-Feel free to run the benchmarks yourself with `npm run benchmark`.
 
 ## License
 
-**Wetf** is licensed under MIT for simplicity and ease of access to other developers, however, if you're an individual or a company using this library in commercial products and/or services, consider subscribing to the appropriate sponsorship level [here](https://github.com/sponsors/timotejroiko) and get priority support for your business.
+**Wetf** is licensed under MIT for simplicity and ease of access to other developers, however, if you're an individual or a company using this library in commercial products and/or services, consider sponsoring this project.
