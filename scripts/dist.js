@@ -8,6 +8,7 @@ const options = {
 	output: {
 		comments: false,
 		beautify: true,
+		ascii_only: true,
 		/** @type {*} */ indent_level: "\t"
 	},
 	mangle: false,

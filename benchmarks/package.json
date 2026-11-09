@@ -2,8 +2,7 @@
   "name": "wetf-benchmarks",
   "private": true,
   "scripts": {
-    "benchmark": "node ./benchmark.js",
-    "benchmark:random": "node ./benchmark-random.js"
+    "benchmark": "node ./benchmark.js"
   },
   "devDependencies": {
     "@devsnek/earl": "github:devsnek/earl#21353f8c55c83b37e668a565b515d09c5d5015e1",

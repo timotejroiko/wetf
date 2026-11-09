@@ -41,6 +41,101 @@ test("scalar values match independent ETF fixtures", () => {
 	assert.throws(() => unpacker.unpack(frame([255])), Error);
 });
 
+test("truncated terms cannot read previous packets or cached payloads", () => {
+	const terms = [
+		[97, 7], [98, 0, 0, 1, 0], [70, 63, 248, 0, 0, 0, 0, 0, 0],
+		[99, ...Buffer.from("1.50000000000000000000e+00".padEnd(31, "\0"))],
+		...[100, 115, 118, 119, 107, 109, 77].map(type => textTerm(type, [115, 101, 99, 114, 101, 116])),
+		[77, ...u32(2), 3, 97, 224],
+		[110, 0, 0], [110, 1, 0, 0], [110, 2, 0, 255, 255],
+		[111, ...u32(2), 0, 255, 255],
+		[104, 1, 97, 7], [105, ...u32(1), 97, 7],
+		[108, ...u32(1), 97, 7, 106],
+		[108, ...u32(1), 97, 7, 97, 8],
+		...[100, 115, 118, 119, 107, 109].flatMap(type =>
+			[[], [97], [115, 101, 99, 114, 101, 116]].map(bytes =>
+				[116, ...u32(1), ...textTerm(type, bytes), 97, 7])),
+		[116, ...u32(1), 108, ...u32(1), 97, 97, 106, 97, 7]
+	];
+	for(const decoding of [
+		{},
+		{ binary: "latin1", string: "utf8", bitbinary: "latin1" },
+		{ binary: "uint8array", string: "uint8array", bitbinary: "uint8array" },
+		{ binary: "buffer", string: "buffer", bitbinary: "buffer" },
+		{ binary: "array", string: "array", bitbinary: "array" }
+	]) {
+		for(const cache of [false, true]) {
+			const unpacker = new Unpacker({ cacheKeys: cache, cacheAtoms: cache, decoding });
+			for(const term of terms) {
+				const packet = frame(term);
+				const expected = unpacker.unpack(packet);
+				for(let size = 0; size < packet.length; size++) {
+					// Seed both scratch bytes and caches immediately before the truncated read.
+					unpacker.unpack(packet);
+					assert.throws(() => unpacker.unpack(packet.subarray(0, size)),
+						`tag ${term[0]}, prefix ${size}, cache ${cache}`);
+				}
+				assert.deepEqual(unpacker.unpack(packet), expected);
+			}
+		}
+	}
+});
+
+test("truncated length headers never make the decoder cursor non-finite", () => {
+	const headers = [
+		[100], [100, 0], [115], [118], [118, 0], [119],
+		[104], [107], [107, 0], [110]
+	];
+	const tails = [
+		...headers,
+		...headers.slice(0, 6).map(header => [116, ...u32(1), ...header]),
+		...[[], [0]].map(length => [116, ...u32(1), 107, ...length]),
+		...[[], [0]].map(length => [108, ...u32(1), 97, 97, 107, ...length])
+	];
+	for(const size of [0, 11990, 12000, 13000]) {
+		const prefix = [104, 2, ...textTerm(109, new Array(size).fill(97))];
+		const valid = frame([...prefix, 97, 7]);
+		for(const cache of [false, true]) {
+			const unpacker = new Unpacker({ cacheKeys: cache, cacheAtoms: cache, decoding: { list: "string" } });
+			for(const tail of tails) {
+				assert.throws(() => unpacker.unpack(frame([...prefix, ...tail])));
+				assert.ok(Number.isFinite(unpacker._i));
+				assert.deepEqual(unpacker.unpack(valid), ["a".repeat(size), 7]);
+			}
+		}
+	}
+});
+
+test("character list tails and large packets respect the input boundary", () => {
+	const unpacker = new Unpacker({ decoding: { list: "string" } });
+	for(const term of [
+		[108, ...u32(1), 97, 97, 106],
+		[108, ...u32(1), 97, 97, 108, ...u32(1), 97, 98, 106],
+		[108, ...u32(1), 97, 97, 107, 0, 2, 98, 99]
+	]) {
+		const packet = frame(term);
+		const expected = unpacker.unpack(packet);
+		for(let size = 0; size < packet.length; size++) {
+			unpacker.unpack(packet);
+			assert.throws(() => unpacker.unpack(packet.subarray(0, size)));
+		}
+		assert.equal(unpacker.unpack(packet), expected);
+	}
+	const large = frame([109, ...u32(13000), ...new Array(13000).fill(97)]);
+	for(const input of [large, Buffer.from(large)]) {
+		assert.equal(unpacker.unpack(input), "a".repeat(13000));
+		for(const size of [0, 1, 2, 3, 4, 5, 6, 11999, 12000, 12001, input.length - 1]) {
+			assert.throws(() => unpacker.unpack(input.subarray(0, size)));
+		}
+	}
+	for(const term of [[104, 255], [105, ...u32(1000000)], [108, ...u32(1000000)], [116, ...u32(1000000)]]) {
+		assert.throws(() => unpacker.unpack(frame(term)));
+	}
+	for(let size = 2; size < 6; size++) {
+		assert.throws(() => unpacker.unpack(Uint8Array.of(131, 80, 0, 0, 0, 2).subarray(0, size)), RangeError);
+	}
+});
+
 test("numbers preserve integer boundaries and floating-point values", () => {
 	for (const value of [2147483648, 4294967295, 4294967296, 2 ** 40 - 1, 2 ** 40, 2 ** 48 - 1, 2 ** 48, Number.MAX_SAFE_INTEGER]) {
 		for (const sign of [1, -1]) {
@@ -965,6 +1060,20 @@ test("compression methods produce standard zlib frames with uncompressed sizes",
 	}
 });
 
+test("Web Streams decompression accepts shared input subviews", async () => {
+	const raw = Buffer.from([109, 0, 0, 0, 6, ...Buffer.from("secret")]);
+	const packet = Buffer.concat([Buffer.from([131, 80, ...u32(raw.length)]), deflateSync(raw)]);
+	for(const backing of [
+		new SharedArrayBuffer(packet.length + 16),
+		runInNewContext("new SharedArrayBuffer(size)", { size: packet.length + 16 })
+	]) {
+		const input = new Uint8Array(backing, 7, packet.length);
+		input.set(packet);
+		const unpacker = new Unpacker({ decompression: "decompressionstream" });
+		assert.equal(await unpacker.unpack(input), "secret");
+	}
+});
+
 test("custom codec failures propagate and non-callable then properties are rejected", async () => {
 	const packet = new Packer({ compression: true }).pack(7);
 	const failure = new Error("codec failure");
@@ -1053,5 +1162,73 @@ test("classic-script bundles use TextEncoder/TextDecoder fallbacks and preserve 
 		const value = { message: "héllo😀".repeat(100), count: 7, nested: { ok: true } };
 		const packet = await new Packer({ compression: true }).pack(value);
 		assert.equal(JSON.stringify(await new Unpacker().unpack(packet)), JSON.stringify(value));
+	}
+});
+
+test("classic-script bundles decode malformed UTF-8 under a legacy script charset", () => {
+	for(const files of [["wetf"], ["packer", "unpacker"]]) {
+		const context = { TextEncoder, TextDecoder };
+		const scriptDecoder = new TextDecoder("windows-1252");
+		for(const file of files) {
+			const source = readFileSync(require.resolve(`../umd/${file}.js`));
+			runInNewContext(scriptDecoder.decode(source), context);
+		}
+		for(const cache of [false, true]) {
+			const unpacker = new context.Wetf.Unpacker({ cacheKeys: cache, cacheAtoms: cache });
+			for(const bytes of [[0xC3], [0xFF], [0xE0, 0x80, 0x80], [0xED, 0xA0, 0x80], [0xF0, 0x9F, 0x98]]) {
+				const expected = new TextDecoder().decode(Uint8Array.from(bytes));
+				for(const type of [109, 118, 119]) {
+					const term = textTerm(type, bytes);
+					assert.equal(unpacker.unpack(frame(term)), expected);
+					const object = unpacker.unpack(frame([116, ...u32(1), ...term, 97, 7]));
+					assert.equal(Object.keys(object)[0], expected);
+					assert.equal(object[expected], 7);
+				}
+			}
+		}
+	}
+});
+
+test("browser decoding accepts large shared input subviews across realms", () => {
+	class BrowserTextDecoder extends TextDecoder {
+		decode(input, options) {
+			// Browser TextDecoder rejects shared views; Node's TextDecoder accepts them.
+			if(input && Object.prototype.toString.call(input.buffer) === "[object SharedArrayBuffer]") {
+				throw new TypeError("TextDecoder input must not be shared");
+			}
+			return super.decode(input, options);
+		}
+	}
+	for(const files of [["wetf"], ["packer", "unpacker"]]) {
+		const context = { TextEncoder, TextDecoder: BrowserTextDecoder };
+		for(const file of files) {
+			runInNewContext(readFileSync(require.resolve(`../umd/${file}.js`), "utf8"), context);
+		}
+		for(const latin1 of [false, true]) {
+			const unpacker = new context.Wetf.Unpacker({
+				browserStrictLatin1: false,
+				decoding: { binary: latin1 ? "latin1" : "utf8", binaryKey: latin1 ? "latin1" : "utf8" }
+			});
+			for(const length of [11994, 11995, 11996, 14000]) {
+				const bytes = Buffer.alloc(length, latin1 ? 233 : 97);
+				const text = bytes.toString(latin1 ? "latin1" : "utf8");
+				for(const term of [
+					textTerm(109, bytes),
+					[116, ...u32(1), ...textTerm(109, bytes), 97, 7]
+				]) {
+					const packet = frame(term);
+					for(const backing of [
+						new SharedArrayBuffer(packet.length + 16),
+						runInNewContext("new SharedArrayBuffer(size)", { size: packet.length + 16 })
+					]) {
+						const input = new Uint8Array(backing, 7, packet.length);
+						input.set(packet);
+						const actual = unpacker.unpack(input);
+						assert.equal(typeof actual === "string" ? actual : Object.keys(actual)[0], text);
+						if(typeof actual !== "string") { assert.equal(actual[text], 7); }
+					}
+				}
+			}
+		}
 	}
 });
