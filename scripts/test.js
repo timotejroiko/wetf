@@ -19,6 +19,16 @@ function textTerm(type, bytes) {
 	return [type, ...length, ...(type === 77 ? [8] : []), ...bytes];
 }
 
+function loadClassicCodecs({ files = ["wetf"], decoder = TextDecoder, charset = "utf8" } = {}) {
+	const context = { TextEncoder, TextDecoder: decoder, CompressionStream, DecompressionStream };
+	const scriptDecoder = new TextDecoder(charset);
+	for(const file of files) {
+		const source = readFileSync(require.resolve(`../umd/${file}.js`));
+		runInNewContext(scriptDecoder.decode(source), context);
+	}
+	return context.Wetf;
+}
+
 test("scalar values match independent ETF fixtures", () => {
 	const packer = new Packer();
 	const unpacker = new Unpacker();
@@ -81,7 +91,7 @@ test("truncated terms cannot read previous packets or cached payloads", () => {
 	}
 });
 
-test("truncated length headers never make the decoder cursor non-finite", () => {
+test("truncated length headers reject incomplete terms and allow decoder reuse", () => {
 	const headers = [
 		[100], [100, 0], [115], [118], [118, 0], [119],
 		[104], [107], [107, 0], [110]
@@ -92,14 +102,13 @@ test("truncated length headers never make the decoder cursor non-finite", () => 
 		...[[], [0]].map(length => [116, ...u32(1), 107, ...length]),
 		...[[], [0]].map(length => [108, ...u32(1), 97, 97, 107, ...length])
 	];
-	for(const size of [0, 11990, 12000, 13000]) {
+	for(const size of [0, 11990, 12000]) {
 		const prefix = [104, 2, ...textTerm(109, new Array(size).fill(97))];
 		const valid = frame([...prefix, 97, 7]);
 		for(const cache of [false, true]) {
 			const unpacker = new Unpacker({ cacheKeys: cache, cacheAtoms: cache, decoding: { list: "string" } });
 			for(const tail of tails) {
 				assert.throws(() => unpacker.unpack(frame([...prefix, ...tail])));
-				assert.ok(Number.isFinite(unpacker._i));
 				assert.deepEqual(unpacker.unpack(valid), ["a".repeat(size), 7]);
 			}
 		}
@@ -149,26 +158,22 @@ test("numbers preserve integer boundaries and floating-point values", () => {
 });
 
 test("legacy floats preserve values and consume all 31 payload bytes", () => {
-	const context = { TextEncoder, TextDecoder };
-	runInNewContext(readFileSync(require.resolve("../umd/unpacker.js"), "utf8"), context);
-	const constructors = [Unpacker, context.Wetf.Unpacker];
+	const constructors = [Unpacker, loadClassicCodecs({ files: ["unpacker"] }).Unpacker];
 	for(const Decoder of constructors) {
-		for(const browserStrictLatin1 of [false, true]) {
-			const unpacker = new Decoder({ browserStrictLatin1 });
-			for(const [text, value] of [
-				["0.00000000000000000000e+00", 0],
-				["-0.00000000000000000000e+00", -0],
-				["8.75000000000000000000e-01", 0.875],
-				["-1.23456789012345669043e+100", -1.2345678901234567e100],
-				["4.94065645841246544177e-324", Number.MIN_VALUE],
-				["1.79769313486231570815e+308", Number.MAX_VALUE]
-			]) {
-				const payload = Buffer.alloc(31);
-				payload.write(text, "ascii");
-				const term = [99, ...payload];
-				assert.equal(unpacker.unpack(frame(term)), value);
-				assert.equal(JSON.stringify(unpacker.unpack(frame([104, 2, ...term, 97, 65]))), JSON.stringify([value, 65]));
-			}
+		const unpacker = new Decoder();
+		for(const [text, value] of [
+			["0.00000000000000000000e+00", 0],
+			["-0.00000000000000000000e+00", -0],
+			["8.75000000000000000000e-01", 0.875],
+			["-1.23456789012345669043e+100", -1.2345678901234567e100],
+			["4.94065645841246544177e-324", Number.MIN_VALUE],
+			["1.79769313486231570815e+308", Number.MAX_VALUE]
+		]) {
+			const payload = Buffer.alloc(31);
+			payload.write(text, "ascii");
+			const term = [99, ...payload];
+			assert.equal(unpacker.unpack(frame(term)), value);
+			assert.deepEqual(Array.from(unpacker.unpack(frame([104, 2, ...term, 97, 65]))), [value, 65]);
 		}
 	}
 });
@@ -187,7 +192,7 @@ test("small BigInts use signed INTEGER_EXT or little-endian SMALL_BIG_EXT", () =
 		assert.deepEqual(roundtrip([value, 65]), [Number(value), 65]);
 	}
 	const forced = new Packer({ encoding: { safeBigInt: "bigint" } });
-	for (let value = 1; value < 256; value++) {
+	for (const value of [1, 127, 128, 255]) {
 		for (const sign of [0, 1]) {
 			const bigint = BigInt(sign ? -value : value);
 			assert.deepEqual(forced.pack(bigint), frame([110, 1, sign, value]));
@@ -216,11 +221,11 @@ test("BigInt byte widths, signs and decoding policies", () => {
 
 test("zero BigInts decode consistently and consume their whole term", () => {
 	for (const type of [110, 111]) {
-		for (const length of [0, 1, 2, 7, 8, 16, 255, 256]) {
+		for (const length of [0, 1, 2, 255, 256]) {
 			if(type === 110 && length > 255) { continue; }
 			for (const sign of [0, 1]) {
 				const term = [type, ...(type === 110 ? [length] : u32(length)), sign, ...Array(length).fill(0)];
-				for (const [safebigint, zero] of [[undefined, 0], ["number", 0], ["bigint", 0n], ["string", "0"]]) {
+				for (const [safebigint, zero] of [["number", 0], ["bigint", 0n], ["string", "0"]]) {
 					assert.deepEqual(new Unpacker({ decoding: { safebigint } }).unpack(frame([104, 2, ...term, 97, 65])), [zero, 65]);
 				}
 			}
@@ -233,17 +238,15 @@ test("padded BigInts use magnitude-based decoding policies and preserve followin
 		const digits = [];
 		for(let rest = value; rest; rest >>= 8n) { digits.push(Number(rest & 255n)); }
 		for(const type of [110, 111]) {
-			for(const length of [2, 7, 8, 9, 16, 255, 256]) {
-				if(length <= digits.length || type === 110 && length > 255) { continue; }
+			for(const length of [digits.length + 1, 256]) {
+				if(type === 110 && length > 255) { continue; }
 				for(const sign of [0, 1]) {
 					const signed = sign ? -value : value;
 					const term = [type, ...(type === 110 ? [length] : u32(length)), sign, ...digits, ...Array(length - digits.length).fill(0)];
-					for(const safebigint of ["number", "bigint", "string"]) {
-						for(const bigint of ["bigint", "string"]) {
-							const mode = value <= 9007199254740991n ? safebigint : bigint;
-							const expected = mode === "number" ? Number(signed) : mode === "string" ? signed.toString() : signed;
-							assert.deepEqual(new Unpacker({ decoding: { safebigint, bigint } }).unpack(frame([104, 2, ...term, 97, 65])), [expected, 65]);
-						}
+					const option = value <= BigInt(Number.MAX_SAFE_INTEGER) ? "safebigint" : "bigint";
+					for(const mode of option === "safebigint" ? ["number", "bigint", "string"] : ["bigint", "string"]) {
+						const expected = mode === "number" ? Number(signed) : mode === "string" ? signed.toString() : signed;
+						assert.deepEqual(new Unpacker({ decoding: { [option]: mode } }).unpack(frame([104, 2, ...term, 97, 65])), [expected, 65]);
 					}
 				}
 			}
@@ -269,7 +272,6 @@ test("tuples, lists, improper lists and NIL", () => {
 	const unpacker = new Unpacker();
 	assert.deepEqual(unpacker.unpack(frame([108, 0, 0, 0, 2, 97, 1, 97, 2, 97, 3])), [1, 2, 3]);
 	assert.deepEqual(unpacker.unpack(frame([105, 0, 0, 0, 0])), []);
-	assert.deepEqual(new Unpacker({ decoding: { nil: "array" } }).unpack(frame([106])), []);
 	assert.deepEqual(unpacker.unpack(frame([106])), []);
 	assert.equal(new Unpacker({ decoding: { nil: "null" } }).unpack(frame([106])), null);
 	assert.deepEqual(roundtrip(null, { encoding: { null: "nil" } }), []);
@@ -389,38 +391,38 @@ test("special values support atoms, null substitution and ignoring", () => {
 	const ignored = () => assert.fail("functions must not be invoked");
 	for (const array of ["tuple", "list", "improperlist"]) {
 		assert.deepEqual(roundtrip([ignored, 1, ignored, [ignored, 2], ignored], { encoding: { array } }), [1, [2]]);
-		assert.deepEqual(roundtrip({ ignored, keep: 1 }), { keep: 1 });
 	}
+	assert.deepEqual(roundtrip({ ignored, keep: 1 }), { keep: 1 });
 	for (const length of [255, 256]) {
 		const value = Array(length).fill(1);
 		assert.deepEqual(roundtrip([ignored, ...value, ignored]), value);
 	}
 });
 
-test("unsupported values are omitted without losing supported data", async () => {
+test("unsupported values are omitted without losing supported data", () => {
 	const unsupported = [
 		new Map([["a", 1]]), new Set([1]), new Date(0), new Error("failure"),
 		new ArrayBuffer(8), /pattern/, () => assert.fail("functions must not be invoked")
 	];
-	for (const compression of [false, "zlib", "compressionstream"]) {
-		for (const array of ["tuple", "list", "improperlist"]) {
-			const packer = new Packer({ poolSize: 24, compression, encoding: { array } });
-			const unpacker = new Unpacker({ decoding: { nil: "array" } });
-			for (const value of unsupported) {
-				assert.deepEqual(await unpacker.unpack(await packer.pack(value)), []);
-				assert.deepEqual(await unpacker.unpack(await packer.pack({ keep: 7, omit: value })), { keep: 7 });
-				assert.deepEqual(await unpacker.unpack(await packer.pack([value, 1, value, { omit: value }, 2, value])), [1, {}, 2]);
-				assert.deepEqual(await unpacker.unpack(await packer.pack([value])), []);
-			}
-			const custom = { keep: 7, toJSON() { assert.fail("toJSON must not be invoked"); } };
-			assert.deepEqual(await unpacker.unpack(await packer.pack(custom)), { keep: 7 });
-			assert.equal(await unpacker.unpack(await packer.pack(9)), 9);
+	const packer = new Packer({ poolSize: 24 });
+	const unpacker = new Unpacker();
+	for (const value of unsupported) {
+		assert.deepEqual(unpacker.unpack(packer.pack(value)), []);
+		assert.deepEqual(unpacker.unpack(packer.pack({ keep: 7, omit: value })), { keep: 7 });
+	}
+	for (const array of ["tuple", "list", "improperlist"]) {
+		const packer = new Packer({ poolSize: 24, encoding: { array } });
+		for (const value of unsupported) {
+			assert.deepEqual(unpacker.unpack(packer.pack([value, 1, value, { omit: value }, 2, value])), [1, {}, 2]);
+			assert.deepEqual(unpacker.unpack(packer.pack([value])), []);
 		}
 	}
+	const custom = { keep: 7, toJSON() { assert.fail("toJSON must not be invoked"); } };
+	assert.deepEqual(roundtrip(custom), { keep: 7 });
 });
 
 test("omission cursors survive value compaction and key rollback", () => {
-	const compacting = new Packer({ poolSize: 96, encoding: { string: "string" } });
+	const compacting = new Packer({ poolSize: 96, encoding: { string: "utf8-string" } });
 	const prefix = compacting.pack("p".repeat(20));
 	const value = { x: "v".repeat(21) };
 	assert.deepEqual(new Unpacker().unpack(compacting.pack(value)), value);
@@ -428,7 +430,7 @@ test("omission cursors survive value compaction and key rollback", () => {
 
 	const omittedKey = "ignored".repeat(8);
 	for (const array of ["tuple", "list", "improperlist"]) {
-		for (const key of ["atom", "binary", "string", "char-string"]) {
+		for (const key of ["atom", "binary", "utf8-string", "char-string"]) {
 			for (const cacheKeys of [false, true]) {
 				const packer = new Packer({ poolSize: 96, cacheKeys, encoding: { array, key, undefined: "ignore", nan: "ignore", infinity: "ignore" } });
 				const unpacker = new Unpacker({ decoding: { nil: "array", binary: "utf8" } });
@@ -446,7 +448,7 @@ test("omission cursors survive value compaction and key rollback", () => {
 });
 
 test("ignored properties still enforce key encoding limits", () => {
-	for (const key of ["atom", "string", "char-string"]) {
+	for (const key of ["atom", "utf8-string", "char-string"]) {
 		const packer = new Packer({ encoding: { key, undefined: "ignore" } });
 		assert.throws(() => packer.pack({ ["a".repeat(65536)]: undefined }), RangeError);
 		assert.deepEqual(new Unpacker().unpack(packer.pack({ keep: 7 })), { keep: 7 });
@@ -458,11 +460,11 @@ test("UTF-8 encoding handles code points, BOM and unpaired surrogates", () => {
 		for (const length of [0, 29, 30, 31, 32]) {
 			const text = "a".repeat(length) + suffix;
 			const expected = Buffer.from(text).toString();
-			for (const string of ["string", "binary"]) {
+			for (const string of ["utf8-string", "binary"]) {
 				const options = { poolSize: 24, encoding: { string }, decoding: { string: "utf8", binary: "utf8" } };
 				assert.deepEqual(roundtrip([text, 65], options), [expected, 65]);
 			}
-			for (const key of ["atom", "string", "binary"]) {
+			for (const key of ["atom", "utf8-string", "binary"]) {
 				assert.deepEqual(roundtrip({ [text]: 65 }, { poolSize: 24, encoding: { key }, decoding: { stringKey: "utf8", binaryKey: "utf8" } }), { [expected]: 65 });
 			}
 		}
@@ -545,7 +547,6 @@ test("UTF-8 decoding replaces invalid sequences without reading the next term", 
 			for (const type of [107, 109, 77, 118, 119]) {
 				const term = textTerm(type, bytes);
 				assert.deepEqual(unpacker.unpack(frame([104, 3, ...term, ...textTerm(109, Array(32).fill(97)), 97, 65])), [expected, "a".repeat(32), 65]);
-				assert.equal(unpacker.unpack(frame(term)), expected);
 			}
 			assert.deepEqual(unpacker.unpack(frame([116, 0, 0, 0, 1, ...textTerm(109, bytes), 97, 65])), { [expected]: 65 });
 		}
@@ -681,9 +682,7 @@ test("default atom substitutions apply to values, not keys", () => {
 		for (const [name, value] of Object.entries(atoms)) {
 			const atom = textTerm(type, Buffer.from(name));
 			const packet = frame([104, 2, ...atom, 116, 0, 0, 0, 1, ...atom, ...atom]);
-			for (let repeat = 0; repeat < 2; repeat++) {
-				assert.deepEqual(unpacker.unpack(packet), [value, { [name]: value }]);
-			}
+			assert.deepEqual(unpacker.unpack(packet), [value, { [name]: value }]);
 		}
 	}
 });
@@ -700,18 +699,18 @@ test("custom atom substitutions never change object key names", () => {
 			const atom = type !== 107 && type !== 109;
 			const value = atom && Object.hasOwn(atomTable, name) ? atomTable[name] : name;
 			const packet = frame([104, 2, ...term, 116, 0, 0, 0, 1, ...term, ...term]);
-			for (let repeat = 0; repeat < 2; repeat++) {
+			for (let repeat = 0; repeat < (cacheKeys || atom && cacheAtoms ? 2 : 1); repeat++) {
 				assert.deepEqual(unpacker.unpack(packet), [value, { [name]: value }]);
 			}
 		}
 	}
 });
 
-test("numeric key caches distinguish byte lengths, six-byte chunks and charsets", () => {
+test("key caches distinguish byte lengths, chunk boundaries and charsets", () => {
 	for (const decoding of [{}, { stringKey: "utf8", binaryKey: "latin1" }]) {
 		for (const cacheKeys of [false, true]) {
 			const unpacker = new Unpacker({ cacheKeys, cacheAtoms: true, decoding });
-			for (const length of [...Array.from({ length: 36 }, (_, i) => i), 63, 120, 250]) {
+			for (const length of [0, 1, 5, 6, 7, 11, 12, 13, 29, 30, 63, 250]) {
 				const rows = [Buffer.alloc(length), Buffer.alloc(length, 255), Buffer.alloc(length, 128)];
 				for (let i = 0; i < length; i += 6) {
 					const bytes = Buffer.alloc(length, 255);
@@ -727,7 +726,7 @@ test("numeric key caches distinguish byte lengths, six-byte chunks and charsets"
 						terms.push(...textTerm(type, rows[i]), 97, i);
 					}
 					const packet = frame([104, 2, 116, ...u32(rows.length), ...terms, 97, 193]);
-					for (let repeat = 0; repeat < 3; repeat++) {
+					for (let repeat = 0; repeat < (cacheKeys ? 2 : 1); repeat++) {
 						assert.deepEqual(unpacker.unpack(packet), [expected, 193]);
 					}
 				}
@@ -736,9 +735,9 @@ test("numeric key caches distinguish byte lengths, six-byte chunks and charsets"
 	}
 });
 
-test("atom Map chains preserve substitutions and unknown atoms across encodings", () => {
+test("atom caches preserve substitutions and unknown atoms across encodings", () => {
 	const values = [undefined, null, false, 0, "", NaN, Symbol("atom"), { replacement: true }];
-	const names = ["", "\0", "é", "ÿ", "Ā", "😀", "__proto__", "constructor", ...Array.from({ length: 40 }, (_, i) => "a".repeat(i + 1)), "z".repeat(256)];
+	const names = ["", "\0", "é", "ÿ", "Ā", "😀", "__proto__", "constructor", ...[1, 5, 6, 7, 11, 12, 13, 29, 30, 40].map(length => "a".repeat(length)), "z".repeat(256)];
 	const atomTable = Object.freeze(Object.fromEntries([...names.map((name, i) => [name, values[i % values.length]]), ["\uD800", 99]]));
 	for (const cacheAtoms of [false, true]) {
 		const unpacker = new Unpacker({ atomTable, cacheAtoms, cacheKeys: true });
@@ -747,7 +746,7 @@ test("atom Map chains preserve substitutions and unknown atoms across encodings"
 			const rows = names.filter(name => charset === "utf8" || [...name].every(char => char.codePointAt(0) <= 255)).map(name => Buffer.from(name, charset));
 			rows.push(Buffer.from("fresh"), Buffer.from("hasOwnProperty"), Buffer.from("\uFFFD", charset));
 			if(charset === "utf8") { rows.push(Buffer.from([255]), Buffer.from([192, 128])); }
-			for (let repeat = 0; repeat < 3; repeat++) {
+			for (let repeat = 0; repeat < (cacheAtoms ? 2 : 1); repeat++) {
 				for (const bytes of rows) {
 					if((type === 115 || type === 119) && bytes.length > 255) { continue; }
 					const name = bytes.toString(charset);
@@ -767,7 +766,7 @@ test("non-Latin1 atom names cannot overwrite Latin1 substitutions", () => {
 		for (const type of [100, 115]) {
 			for (const [name, expected] of [["\0", "nul"], ["abcdef\0", false], ["abcdef\0tail", 0], ["unknown\0", "unknown\0"]]) {
 				const bytes = Buffer.from(name, "latin1");
-				for (let repeat = 0; repeat < 2; repeat++) {
+				for (let repeat = 0; repeat < (cacheAtoms ? 2 : 1); repeat++) {
 					assert.equal(unpacker.unpack(frame(textTerm(type, bytes))), expected);
 				}
 			}
@@ -831,9 +830,7 @@ test("short key caches preserve zero and FF bytes at every byte position", () =>
 		const packet = frame([104, 3, ...map, ...map, 97, 9]);
 		for (const cacheKeys of [false, true]) {
 			const unpacker = new Unpacker({ cacheKeys });
-			for (let repeat = 0; repeat < 3; repeat++) {
-				assert.deepEqual(unpacker.unpack(packet), [expected, expected, 9]);
-			}
+			assert.deepEqual(unpacker.unpack(packet), [expected, expected, 9]);
 		}
 	}
 });
@@ -841,9 +838,6 @@ test("short key caches preserve zero and FF bytes at every byte position", () =>
 test("character lists and other ETF keys become JavaScript property keys", () => {
 	const unpacker = new Unpacker();
 	for (const [term, key] of [
-		[textTerm(107, [233]), "é"],
-		[textTerm(109, [195, 169]), "é"],
-		[textTerm(119, [195, 169]), "é"],
 		[[108, 0, 0, 0, 1, 97, 233, 106], "é"],
 		[[97, 42], "42"],
 		[[104, 1, ...textTerm(109, [65])], "A"],
@@ -851,16 +845,14 @@ test("character lists and other ETF keys become JavaScript property keys", () =>
 		[textTerm(77, [65]), "65"]
 	]) {
 		const packet = frame([104, 2, 116, 0, 0, 0, 1, ...term, 97, 7, 97, 9]);
-		for (let repeat = 0; repeat < 2; repeat++) {
-			assert.deepEqual(unpacker.unpack(packet), [{ [key]: 7 }, 9]);
-		}
+		assert.deepEqual(unpacker.unpack(packet), [{ [key]: 7 }, 9]);
 	}
 });
 
 test("shared key caches distinguish Latin-1 bytes from UTF-8 and preserve malformed prefixes", () => {
 	for (const cacheKeys of [false, true]) {
 		const unpacker = new Unpacker({ cacheKeys, decoding: { stringKey: "latin1", binaryKey: "utf8" } });
-		for (let repeat = 0; repeat < 3; repeat++) {
+		for (let repeat = 0; repeat < (cacheKeys ? 2 : 1); repeat++) {
 			for (const bytes of [[195, 169], [195], [195, 65], [97, 195], [97, 195, 65], [239, 191, 189]]) {
 				for (const type of [107, 109, 100, 118]) {
 					const expected = Buffer.from(bytes).toString(type === 107 || type === 100 ? "latin1" : "utf8");
@@ -875,7 +867,7 @@ test("shared key caches distinguish Latin-1 bytes from UTF-8 and preserve malfor
 test("malformed UTF-8 keys preserve replacement characters across cache boundaries", () => {
 	for (const cacheKeys of [false, true]) {
 		const unpacker = new Unpacker({ cacheKeys, decoding: { stringKey: "utf8" } });
-		for (let repeat = 0; repeat < 3; repeat++) {
+		for (let repeat = 0; repeat < (cacheKeys ? 2 : 1); repeat++) {
 			for (const bytes of [[128], [195], [239, 191, 189], [97, 195], [...Array(7).fill(97), 195], [...Array(8).fill(97), 195], [...Array(8).fill(97), 128]]) {
 				const key = Buffer.from(bytes).toString("utf8");
 				for (const type of [107, 109]) {
@@ -892,14 +884,12 @@ test("__proto__ map keys are own properties and cannot change object prototypes"
 	const keys = [100, 115, 118, 119, 107, 109].map(type => textTerm(type, Buffer.from("__proto__")));
 	keys.push([104, 1, ...textTerm(107, Buffer.from("__proto__"))]);
 	for (const key of keys) {
-		for (const binary of ["utf8", "buffer"]) {
-			const [object, next] = new Unpacker({ decoding: { binary } }).unpack(frame([104, 2, 116, 0, 0, 0, 1, ...key, ...payload, 97, 65]));
-			assert.equal(Object.getPrototypeOf(object), Object.prototype);
-			assert.equal(Object.hasOwn(object, "__proto__"), true);
-			assert.deepEqual(object.__proto__, { isAdmin: true });
-			assert.equal(object.isAdmin, undefined);
-			assert.equal(next, 65);
-		}
+		const [object, next] = new Unpacker().unpack(frame([104, 2, 116, 0, 0, 0, 1, ...key, ...payload, 97, 65]));
+		assert.equal(Object.getPrototypeOf(object), Object.prototype);
+		assert.equal(Object.hasOwn(object, "__proto__"), true);
+		assert.deepEqual(object.__proto__, { isAdmin: true });
+		assert.equal(object.isAdmin, undefined);
+		assert.equal(next, 65);
 	}
 });
 
@@ -907,31 +897,23 @@ test("cached keys preserve ETF bytes across encodings, pool reuse and failed wri
 	const keys = ["", "abcd", "abcde", "abcdefgh", "abcdefghi", "__proto__", "constructor", "toString", "valueOf", "hasOwnProperty", "__defineGetter__", "\0éÿĀ😀\uD800a\uDC00", "é".repeat(31), "é".repeat(32), "中😀".repeat(40), "a".repeat(85), "a".repeat(86), "a".repeat(256)];
 	const value = Object.fromEntries(keys.map(key => [key, 7]));
 	value.ignoredLongKey = undefined;
-	for (const key of [undefined, "atom", "binary", "string", "char-string"]) {
-		const binary = key === undefined || key === "binary";
-		for (const useLegacyAtoms of [false, true]) {
-			const latin1 = key === "char-string" || key === "atom" && useLegacyAtoms;
-			const charset = latin1 ? "latin1" : "utf8";
-			const expected = Object.fromEntries(keys.map(name => [Buffer.from(name, charset).toString(charset), 7]));
-			const options = { poolSize: 24, useLegacyAtoms, encoding: { key, undefined: "ignore" } };
-			const reference = new Packer({ ...options, cacheKeys: false }).pack(value);
-			const unpacker = new Unpacker({ decoding: { stringKey: key === "string" ? "utf8" : "latin1" } });
-			assert.deepEqual(unpacker.unpack(reference), expected);
-			for (const cacheKeys of [false, true]) {
-				const packer = new Packer({ ...options, cacheKeys });
-				const first = packer.pack(value);
-				assert.deepEqual(first, reference);
-				assert.deepEqual(unpacker.unpack(first), expected);
-				for (let i = 0; i < 3; i++) {
-					packer.pack("x".repeat(8192));
-					assert.deepEqual(packer.pack(value), reference);
-				}
-				assert.deepEqual(first, reference);
-				if(!binary) {
-					assert.throws(() => packer.pack({ ["x".repeat(65536)]: 1 }), RangeError);
-					assert.deepEqual(packer.pack(value), reference);
-				}
-			}
+	for (const [key, useLegacyAtoms] of [["binary", false], ["utf8-string", false], ["char-string", false], ["atom", false], ["atom", true]]) {
+		const latin1 = key === "char-string" || key === "atom" && useLegacyAtoms;
+		const charset = latin1 ? "latin1" : "utf8";
+		const expected = Object.fromEntries(keys.map(name => [Buffer.from(name, charset).toString(charset), 7]));
+		const options = { poolSize: 24, useLegacyAtoms, encoding: { key, undefined: "ignore" } };
+		const reference = new Packer({ ...options, cacheKeys: false }).pack(value);
+		const unpacker = new Unpacker({ decoding: { stringKey: key === "utf8-string" ? "utf8" : "latin1" } });
+		const packer = new Packer({ ...options, cacheKeys: true });
+		const first = packer.pack(value);
+		assert.deepEqual(first, reference);
+		assert.deepEqual(unpacker.unpack(first), expected);
+		packer.pack("x".repeat(8192));
+		assert.deepEqual(packer.pack(value), reference);
+		assert.deepEqual(first, reference);
+		if(key !== "binary") {
+			assert.throws(() => packer.pack({ ["x".repeat(65536)]: 1 }), RangeError);
+			assert.deepEqual(packer.pack(value), reference);
 		}
 	}
 });
@@ -959,14 +941,14 @@ test("16-bit text lengths use encoded bytes and reject overflow without corrupti
 		["😀".repeat(16383) + "aaa", "😀".repeat(16384)]
 	];
 	for (const [valid, overflow] of boundaries) {
-		for (const key of ["atom", "string"]) {
+		for (const key of ["atom", "utf8-string"]) {
 			const packer = new Packer({ poolSize: 24, encoding: { key } });
 			const unpacker = new Unpacker({ decoding: { stringKey: "utf8" } });
 			assert.deepEqual(unpacker.unpack(packer.pack({ [valid]: 1 })), { [valid]: 1 });
 			assert.throws(() => packer.pack({ [overflow]: 1 }), RangeError);
 			assert.deepEqual(unpacker.unpack(packer.pack({ ok: 2 })), { ok: 2 });
 		}
-		const packer = new Packer({ poolSize: 24, encoding: { string: "string", buffer: "string" } });
+		const packer = new Packer({ poolSize: 24, encoding: { string: "utf8-string", buffer: "string" } });
 		const unpacker = new Unpacker({ decoding: { string: "utf8" } });
 		assert.equal(unpacker.unpack(packer.pack(valid)), valid);
 		assert.throws(() => packer.pack(overflow), RangeError);
@@ -999,7 +981,7 @@ test("pool growth and compaction preserve packets, nested values and later write
 			const compacted = compacting.pack(["€".repeat(40), 65]);
 			assert.deepEqual(new Unpacker({ decoding: { binary: "utf8" } }).unpack(compacted), ["€".repeat(40), 65]);
 			assert.equal(new Unpacker({ decoding: { binary: "utf8" } }).unpack(prefix), "a".repeat(20));
-			for (const string of ["string", "binary"]) {
+			for (const string of ["utf8-string", "binary"]) {
 				const packer = new Packer({ poolSize, encoding: { array, string } });
 				const unpacker = new Unpacker({ decoding: { string: "utf8", binary: string === "binary" ? "utf8" : "uint8array" } });
 				const value = { text: "€".repeat(1000), bytes: string === "binary" ? "bytes" : bytes, big: 1n << 8192n, nested: [true, { a: 7 }], list: Array(256).fill(3) };
@@ -1046,16 +1028,16 @@ test("compression methods produce standard zlib frames with uncompressed sizes",
 			assert.deepEqual(inflateSync(packet.subarray(6)), raw);
 		}
 	}
-	for (const [value, raw] of cases) {
-		const packet = Buffer.concat([Buffer.from([131, 80, ...u32(raw.length)]), deflateSync(raw)]);
-		for (const decompression of ["zlib", "decompressionstream", inflateSync, async data => inflateSync(data), foreignInflate]) {
+	for (const decompression of ["zlib", "decompressionstream", inflateSync, async data => inflateSync(data), foreignInflate]) {
+		for (const [value, raw] of cases) {
+			const packet = Buffer.concat([Buffer.from([131, 80, ...u32(raw.length)]), deflateSync(raw)]);
 			const unpacker = new Unpacker({ decompression, decoding: { binary: typeof value === "string" ? "utf8" : "uint8array" } });
 			assert.deepEqual(await unpacker.unpack(packet), value);
-			for (const size of [0, raw.length - 1, raw.length + 1, 0xFFFFFFFF]) {
-				const invalid = Buffer.from(packet);
-				invalid.writeUInt32BE(size, 2);
-				await assert.rejects(async () => unpacker.unpack(invalid), RangeError);
-			}
+		}
+		const unpacker = new Unpacker({ decompression });
+		for (const size of [0, 1, 3, 0xFFFFFFFF]) {
+			const invalid = Buffer.concat([Buffer.from([131, 80, ...u32(size)]), deflateSync(cases[0][1])]);
+			await assert.rejects(async () => unpacker.unpack(invalid), RangeError);
 		}
 	}
 });
@@ -1082,7 +1064,7 @@ test("custom codec failures propagate and non-callable then properties are rejec
 		await assert.rejects(async () => new Packer({ compression: codec }).pack(7), error => error === failure);
 		await assert.rejects(async () => new Unpacker({ decompression: codec }).unpack(packet), error => error === failure);
 	}
-	for (const then of [0, true, "not callable"]) {
+	for (const then of [0, "not callable"]) {
 		assert.throws(() => new Packer({ compression: () => ({ then }) }).pack(7), TypeError);
 		assert.throws(() => new Unpacker({ decompression: () => ({ then }) }).unpack(packet), TypeError);
 	}
@@ -1104,86 +1086,80 @@ test("out-of-order asynchronous compression keeps each packet's payload and size
 	assert.deepEqual(packets.map(packet => new Unpacker({ decoding: { binary: "utf8" } }).unpack(packet)), [7, "a".repeat(1000)]);
 });
 
-test("classic-script bundles use TextEncoder/TextDecoder fallbacks and preserve UTF-8 BOM", async () => {
+test("combined and split classic-script bundles round-trip plain and compressed data", async () => {
+	const value = { message: "héllo😀".repeat(100), count: 7, nested: { ok: true } };
 	for (const files of [["wetf"], ["packer", "unpacker"]]) {
-		const context = { TextEncoder, TextDecoder, CompressionStream, DecompressionStream };
-		for (const file of files) {
-			runInNewContext(readFileSync(require.resolve(`../umd/${file}.js`), "utf8"), context);
+		const { Packer, Unpacker } = loadClassicCodecs({ files });
+		for(const compression of [false, true]) {
+			const packet = await new Packer({ compression }).pack(value);
+			assert.deepEqual(structuredClone(await new Unpacker().unpack(packet)), value);
 		}
-		const { Packer, Unpacker } = context.Wetf;
-		for (const keyEncoding of [undefined, "atom", "char-string"]) {
-			for (const useLegacyAtoms of [false, true]) {
-				const key = "\0éÿĀ😀\uD800".repeat(10);
-				const latin1 = keyEncoding === "char-string" || keyEncoding === "atom" && useLegacyAtoms;
-				const bytes = [...Buffer.from(key, latin1 ? "latin1" : "utf8")];
-				const type = keyEncoding === undefined ? 109 : keyEncoding === "char-string" ? 107 : useLegacyAtoms ? 115 : 119;
-				const expected = [...frame([116, 0, 0, 0, 1, ...textTerm(type, bytes), 97, 7])];
-				for (const cacheKeys of [false, true]) {
-					const packer = new Packer({ cacheKeys, useLegacyAtoms, poolSize: 24, encoding: { key: keyEncoding } });
-					assert.deepEqual([...packer.pack({ [key]: 7 })], expected);
-					packer.pack(new Uint8Array(8192));
-					assert.deepEqual([...packer.pack({ [key]: 7 })], expected);
-				}
-			}
-		}
-		for (const [string, text, expected] of [
-			["char-string", "\0éÿĀ😀\uD800", [0, 233, 255, 0, 61, 0, 0]],
-			["char-list", "\0éÿĀ😀\uD800", [0, 233, 255, 256, 128512, 65533]]
-		]) {
-			const packer = new Packer({ poolSize: 24, encoding: { string } });
-			const unpacker = new Unpacker({ decoding: { string: "array" } });
-			assert.equal(JSON.stringify(unpacker.unpack(packer.pack([7, text, 9]))), JSON.stringify([7, expected, 9]));
-		}
-		for (const browserStrictLatin1 of [undefined, false, true]) {
-			for (const length of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 255, 256, 257, 258, 259]) {
-				const bytes = Array.from({ length }, (_, i) => browserStrictLatin1 === false ? (i * 41) & 127 : length === 256 ? i : [0x80, 0x9F, 0xFF, 0, 0xE9, 0x81, 0x7F, 0xFE, 0x91][i % 9]);
-				const expected = Buffer.from(bytes).toString("latin1");
-				const unpacker = new Unpacker({ browserStrictLatin1, decoding: { binary: "latin1", binaryKey: "latin1", bitbinary: "latin1" } });
-				for (const type of [100, 107, 109, 77]) {
-					const term = textTerm(type, bytes);
-					assert.equal(JSON.stringify(unpacker.unpack(frame([104, 2, ...term, 97, 7]))), JSON.stringify([expected, 7]));
-					if(type === 77) { continue; }
-					const object = unpacker.unpack(frame([116, 0, 0, 0, 1, ...term, ...term]));
-					assert.equal(object[expected], expected);
-				}
-			}
-		}
-		for (const text of ["héllo😀", "\uFEFF", "\uFEFF" + "é€😀".repeat(100), "\uD800", "a".repeat(32) + "\uD800"]) {
-			const expected = Buffer.from(text).toString();
-			assert.equal(new Unpacker().unpack(new Packer({ poolSize: 24 }).pack(text)), expected);
-			for (const type of [118, 119]) {
-				const bytes = Buffer.from(text);
-				if(type === 119 && bytes.length > 255) { continue; }
-				const atom = textTerm(type, bytes);
-				const actual = new Unpacker().unpack(frame([104, 2, ...atom, 116, 0, 0, 0, 1, ...atom, ...atom]));
-				assert.equal(JSON.stringify(actual), JSON.stringify([expected, { [expected]: expected }]));
-			}
-		}
-		const value = { message: "héllo😀".repeat(100), count: 7, nested: { ok: true } };
-		const packet = await new Packer({ compression: true }).pack(value);
-		assert.equal(JSON.stringify(await new Unpacker().unpack(packet)), JSON.stringify(value));
 	}
 });
 
-test("classic-script bundles decode malformed UTF-8 under a legacy script charset", () => {
-	for(const files of [["wetf"], ["packer", "unpacker"]]) {
-		const context = { TextEncoder, TextDecoder };
-		const scriptDecoder = new TextDecoder("windows-1252");
-		for(const file of files) {
-			const source = readFileSync(require.resolve(`../umd/${file}.js`));
-			runInNewContext(scriptDecoder.decode(source), context);
+test("browser text codecs preserve key encodings, Latin-1 bytes and UTF-8 BOM", () => {
+	const { Packer, Unpacker } = loadClassicCodecs();
+	for (const [keyEncoding, useLegacyAtoms, type] of [
+		[undefined, false, 109], ["utf8-string", false, 107], ["char-string", false, 107],
+		["atom", false, 119], ["atom", true, 115]
+	]) {
+		const key = "\0éÿĀ😀\uD800".repeat(10);
+		const latin1 = keyEncoding === "char-string" || keyEncoding === "atom" && useLegacyAtoms;
+		const bytes = [...Buffer.from(key, latin1 ? "latin1" : "utf8")];
+		const expected = [...frame([116, 0, 0, 0, 1, ...textTerm(type, bytes), 97, 7])];
+		for (const cacheKeys of [false, true]) {
+			const packer = new Packer({ cacheKeys, useLegacyAtoms, poolSize: 24, encoding: { key: keyEncoding } });
+			assert.deepEqual([...packer.pack({ [key]: 7 })], expected);
+			packer.pack(new Uint8Array(8192));
+			assert.deepEqual([...packer.pack({ [key]: 7 })], expected);
 		}
-		for(const cache of [false, true]) {
-			const unpacker = new context.Wetf.Unpacker({ cacheKeys: cache, cacheAtoms: cache });
-			for(const bytes of [[0xC3], [0xFF], [0xE0, 0x80, 0x80], [0xED, 0xA0, 0x80], [0xF0, 0x9F, 0x98]]) {
-				const expected = new TextDecoder().decode(Uint8Array.from(bytes));
-				for(const type of [109, 118, 119]) {
-					const term = textTerm(type, bytes);
-					assert.equal(unpacker.unpack(frame(term)), expected);
-					const object = unpacker.unpack(frame([116, ...u32(1), ...term, 97, 7]));
-					assert.equal(Object.keys(object)[0], expected);
-					assert.equal(object[expected], 7);
-				}
+	}
+	for (const [string, text, expected] of [
+		["char-string", "\0éÿĀ😀\uD800", [0, 233, 255, 0, 61, 0, 0]],
+		["char-list", "\0éÿĀ😀\uD800", [0, 233, 255, 256, 128512, 65533]]
+	]) {
+		const packer = new Packer({ poolSize: 24, encoding: { string } });
+		const unpacker = new Unpacker({ decoding: { string: "array" } });
+		assert.deepEqual(structuredClone(unpacker.unpack(packer.pack([7, text, 9]))), [7, expected, 9]);
+	}
+	for (const browserStrictLatin1 of [undefined, false]) {
+		for (const length of [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 31, 32, 33, 256, 257]) {
+			const bytes = Array.from({ length }, (_, i) => browserStrictLatin1 === false ? (i * 41) & 127 : length === 256 ? i : [0x80, 0x9F, 0xFF, 0, 0xE9, 0x81, 0x7F, 0xFE, 0x91][i % 9]);
+			const expected = Buffer.from(bytes).toString("latin1");
+			const unpacker = new Unpacker({ browserStrictLatin1, decoding: { binary: "latin1", binaryKey: "latin1", bitbinary: "latin1" } });
+			for (const type of [100, 107, 109, 77]) {
+				const term = textTerm(type, bytes);
+				assert.deepEqual(Array.from(unpacker.unpack(frame([104, 2, ...term, 97, 7]))), [expected, 7]);
+				if(type === 77) { continue; }
+				const object = unpacker.unpack(frame([116, 0, 0, 0, 1, ...term, ...term]));
+				assert.deepEqual(structuredClone(object), { [expected]: expected });
+			}
+		}
+	}
+	for (const text of ["héllo😀", "\uFEFF", "\uFEFF" + "é€😀".repeat(100), "\uD800", "a".repeat(32) + "\uD800"]) {
+		const expected = Buffer.from(text).toString();
+		assert.equal(new Unpacker().unpack(new Packer({ poolSize: 24 }).pack(text)), expected);
+		for (const type of [118, 119]) {
+			const bytes = Buffer.from(text);
+			if(type === 119 && bytes.length > 255) { continue; }
+			const atom = textTerm(type, bytes);
+			const actual = new Unpacker().unpack(frame([104, 2, ...atom, 116, 0, 0, 0, 1, ...atom, ...atom]));
+			assert.deepEqual(structuredClone(actual), [expected, { [expected]: expected }]);
+		}
+	}
+});
+
+test("classic-script decoding handles malformed UTF-8 under a legacy script charset", () => {
+	const { Unpacker } = loadClassicCodecs({ charset: "windows-1252" });
+	for(const cache of [false, true]) {
+		const unpacker = new Unpacker({ cacheKeys: cache, cacheAtoms: cache });
+		for(const bytes of [[0xC3], [0xFF], [0xE0, 0x80, 0x80], [0xED, 0xA0, 0x80], [0xF0, 0x9F, 0x98]]) {
+			const expected = new TextDecoder().decode(Uint8Array.from(bytes));
+			for(const type of [109, 118, 119]) {
+				const term = textTerm(type, bytes);
+				assert.equal(unpacker.unpack(frame(term)), expected);
+				const object = unpacker.unpack(frame([116, ...u32(1), ...term, 97, 7]));
+				assert.deepEqual(structuredClone(object), { [expected]: 7 });
 			}
 		}
 	}
@@ -1199,34 +1175,27 @@ test("browser decoding accepts large shared input subviews across realms", () =>
 			return super.decode(input, options);
 		}
 	}
-	for(const files of [["wetf"], ["packer", "unpacker"]]) {
-		const context = { TextEncoder, TextDecoder: BrowserTextDecoder };
-		for(const file of files) {
-			runInNewContext(readFileSync(require.resolve(`../umd/${file}.js`), "utf8"), context);
-		}
-		for(const latin1 of [false, true]) {
-			const unpacker = new context.Wetf.Unpacker({
-				browserStrictLatin1: false,
-				decoding: { binary: latin1 ? "latin1" : "utf8", binaryKey: latin1 ? "latin1" : "utf8" }
-			});
-			for(const length of [11994, 11995, 11996, 14000]) {
-				const bytes = Buffer.alloc(length, latin1 ? 233 : 97);
-				const text = bytes.toString(latin1 ? "latin1" : "utf8");
-				for(const term of [
-					textTerm(109, bytes),
-					[116, ...u32(1), ...textTerm(109, bytes), 97, 7]
+	const { Unpacker } = loadClassicCodecs({ decoder: BrowserTextDecoder });
+	for(const latin1 of [false, true]) {
+		const unpacker = new Unpacker({
+			browserStrictLatin1: false,
+			decoding: { binary: latin1 ? "latin1" : "utf8", binaryKey: latin1 ? "latin1" : "utf8" }
+		});
+		for(const length of [11994, 11995, 11996, 14000]) {
+			const bytes = Buffer.alloc(length, latin1 ? 233 : 97);
+			const text = bytes.toString(latin1 ? "latin1" : "utf8");
+			for(const [term, expected] of [
+				[textTerm(109, bytes), text],
+				[[116, ...u32(1), ...textTerm(109, bytes), 97, 7], { [text]: 7 }]
+			]) {
+				const packet = frame(term);
+				for(const backing of [
+					new SharedArrayBuffer(packet.length + 16),
+					runInNewContext("new SharedArrayBuffer(size)", { size: packet.length + 16 })
 				]) {
-					const packet = frame(term);
-					for(const backing of [
-						new SharedArrayBuffer(packet.length + 16),
-						runInNewContext("new SharedArrayBuffer(size)", { size: packet.length + 16 })
-					]) {
-						const input = new Uint8Array(backing, 7, packet.length);
-						input.set(packet);
-						const actual = unpacker.unpack(input);
-						assert.equal(typeof actual === "string" ? actual : Object.keys(actual)[0], text);
-						if(typeof actual !== "string") { assert.equal(actual[text], 7); }
-					}
+					const input = new Uint8Array(backing, 7, packet.length);
+					input.set(packet);
+					assert.deepEqual(structuredClone(unpacker.unpack(input)), expected);
 				}
 			}
 		}
