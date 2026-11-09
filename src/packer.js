@@ -66,12 +66,12 @@ class Packer {
 				// @ts-ignore
 				const zlib = typeof process !== "undefined" && typeof process.getBuiltinModule === "function" ? process.getBuiltinModule("node:zlib") : typeof require === "function" ? require("node:zlib") : null;
 				if(!zlib) { throw new Error("Lazy-loading zlib with ESM requires Node.js 20.16+ or 22.3+. Use zlib in a custom callback or switch to CommonJS."); }
-				/** @private */ this._z = (/** @type {Uint8Array} */ raw) => {
+				/** @private */ this._z = (/** @type {Uint8Array<ArrayBuffer>} */ raw) => {
 					const comp = zlib.deflateSync(raw);
 					return this._compressorOut(comp, raw.length);
 				};
 			} else if(this._compressor === "compressionstream") {
-				this._z = (/** @type {Uint8Array} */ raw) => {
+				this._z = (/** @type {Uint8Array<ArrayBuffer>} */ raw) => {
 					const compression = new CompressionStream("deflate");
 					const reader = compression.readable.getReader();
 					const writer = compression.writable.getWriter();
@@ -80,7 +80,7 @@ class Packer {
 				};
 			} else if(typeof this._compressor === "function") {
 				const fn = this._compressor;
-				this._z = (/** @type {Uint8Array} */ raw) => {
+				this._z = (/** @type {Uint8Array<ArrayBuffer>} */ raw) => {
 					const comp = fn(raw);
 					if("then" in comp) {
 						if(typeof comp.then !== "function") { throw new TypeError("Custom compressor returned a non-callable then"); }
@@ -95,7 +95,7 @@ class Packer {
 	/**
 	 * 
 	 * @param {*} data 
-	 * @returns 
+	 * @returns {Uint8Array<ArrayBuffer> | Promise<Uint8Array<ArrayBuffer>>}
 	 */
 	pack(data) {
 		this._o = this._i;
@@ -670,7 +670,7 @@ class Packer {
 
 	/**
 	 * @private
-	 * @param {Uint8Array | Buffer} comp 
+	 * @param {Uint8Array} comp
 	 * @param {number} rawSize Uncompressed ETF payload size, excluding the version byte.
 	 */
 	_compressorOut(comp, rawSize) {

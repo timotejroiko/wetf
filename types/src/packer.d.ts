@@ -41,7 +41,7 @@ declare class Packer {
     private _e;
     private _T;
     private _z;
-    pack(data: any): Uint8Array | Promise<Uint8Array>;
+    pack(data: any): Uint8Array<ArrayBuffer> | Promise<Uint8Array<ArrayBuffer>>;
     private _loop;
     private _expand;
     private _utf;
