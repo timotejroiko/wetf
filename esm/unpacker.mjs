@@ -20,6 +20,7 @@ export class Unpacker {
 		this._sb = null;
 		this._b = null;
 		this._i = 0;
+		this._end = 0;
 		if (typeof process !== "undefined" && typeof process?.versions?.node === "string") {
 			this._sb = Buffer.from(this._sd.buffer, this._sd.byteOffset, this._sd.length);
 			this._b = this._sb;
@@ -104,6 +105,9 @@ export class Unpacker {
 	unpack(data) {
 		const i = data[0] === 131 ? 1 : 0;
 		if (data[i] === 80) {
+			if (data.length - i < 5) {
+				throw new RangeError("Truncated ETF payload");
+			}
 			const size = data[i + 1] * 16777216 + (data[i + 2] << 16) + (data[i + 3] << 8) + data[i + 4];
 			const raw = data.subarray(i + 5);
 			if (this._decompressor === "zlib") {
@@ -148,6 +152,7 @@ export class Unpacker {
 			}
 		}
 		this._i = i;
+		this._end = data.length;
 		if (data.length <= this._sd.length) {
 			this._sd.set(data);
 			this._d = this._sd;
@@ -163,7 +168,11 @@ export class Unpacker {
 			}
 			this._v = new DataView(this._d.buffer, this._d.byteOffset, this._d.length);
 		}
-		return this._loop();
+		const value = this._loop();
+		if (this._i > this._end) {
+			throw new RangeError("Truncated ETF payload");
+		}
+		return value;
 	}
 	_loop() {
 		const type = this._d[this._i++];
@@ -197,7 +206,9 @@ export class Unpacker {
 		case 118:
 		case 119:
 			{
-				const length = type === 100 || type === 118 ? (this._d[this._i++] << 8) + this._d[this._i++] : this._d[this._i++];
+				const wide = type === 100 || type === 118;
+				const length = wide ? this._v.getUint16(this._i) : this._d[this._i] | 0;
+				this._i += wide ? 2 : 1;
 				if (this._cacheAtoms) {
 					return this._lookup(length, type >= 118 ? this._atomTableUtf : this._atomTableLatin);
 				}
@@ -211,13 +222,16 @@ export class Unpacker {
 			{
 				let length;
 				if (type === 104) {
-					length = this._d[this._i++];
+					length = this._d[this._i++] | 0;
 				} else {
 					length = this._v.getUint32(this._i);
 					this._i += 4;
 				}
 				if (type === 108 && this._listDecoding === 2) {
 					return this._charList(length);
+				}
+				if (length > this._end - this._i) {
+					throw new RangeError("Truncated ETF payload");
 				}
 				const array = Array(length);
 				for (let i = 0; i < length; i++) {
@@ -246,7 +260,8 @@ export class Unpacker {
 				let code;
 				let bits = 8;
 				if (type === 107) {
-					length = (this._d[this._i++] << 8) + this._d[this._i++];
+					length = this._v.getUint16(this._i);
+					this._i += 2;
 					code = this._stringDecoding;
 				} else if (type === 109) {
 					length = this._v.getUint32(this._i);
@@ -257,12 +272,15 @@ export class Unpacker {
 					code = this._bitbinaryDecoding;
 					bits = this._d[this._i + 4];
 					this._i += 5;
-					if (bits < 8 && length && code < 3) {
-						const last = this._d[this._i + length - 1] >> 8 - bits;
-						const string = code === 2 ? this._latin(length - 1) : this._utf(length - 1);
-						this._i++;
-						return string + String.fromCharCode(last);
-					}
+				}
+				if (length > this._end - this._i) {
+					throw new RangeError("Truncated ETF payload");
+				}
+				if (bits < 8 && length && code < 3) {
+					const last = this._d[this._i + length - 1] >> 8 - bits;
+					const string = code === 2 ? this._latin(length - 1) : this._utf(length - 1);
+					this._i++;
+					return string + String.fromCharCode(last);
 				}
 				if (code === 5) {
 					const array = Array(length);
@@ -300,7 +318,7 @@ export class Unpacker {
 			{
 				let length;
 				if (type === 110) {
-					length = this._d[this._i++];
+					length = this._d[this._i++] | 0;
 				} else {
 					length = this._v.getUint32(this._i);
 					this._i += 4;
@@ -378,15 +396,16 @@ export class Unpacker {
 				this._i += 4;
 				for (let i = 0; i < length; i++) {
 					const key = this._key();
+					const value = this._loop();
 					if (key === "__proto__") {
 						Object.defineProperty(obj, key, {
-							value: this._loop(),
+							value: value,
 							writable: true,
 							enumerable: true,
 							configurable: true
 						});
 					} else {
-						obj[key] = this._loop();
+						obj[key] = value;
 					}
 				}
 				return obj;
@@ -398,14 +417,17 @@ export class Unpacker {
 		const keyType = this._d[this._i];
 		if (keyType === 107 || keyType === 109) {
 			const opt = keyType === 107 ? this._stringKeyDecoding : this._binaryKeyDecoding;
-			const length = keyType === 107 ? (this._d[this._i + 1] << 8) + this._d[this._i + 2] : this._v.getUint32(this._i + 1);
+			const length = keyType === 107 ? this._v.getUint16(this._i + 1) : this._v.getUint32(this._i + 1);
 			this._i += keyType === 107 ? 3 : 5;
+			if (keyType === 109 && length > this._end - this._i) {
+				throw new RangeError("Truncated ETF payload");
+			}
 			if (length === 0) {
 				return "";
 			}
 			if (length === 1) {
 				const byte = this._d[this._i++];
-				return opt === 1 && byte >= 128 ? "�" : String.fromCharCode(byte);
+				return opt === 1 && byte >= 128 ? "\ufffd" : String.fromCharCode(byte);
 			}
 			if (this._cacheKeys && length < 30) {
 				return this._lookup(length, opt === 1 ? this._keyTableUtf : this._keyTableLatin);
@@ -414,14 +436,14 @@ export class Unpacker {
 		}
 		if (keyType === 100 || keyType === 115 || keyType === 118 || keyType === 119) {
 			const wide = keyType === 100 || keyType === 118;
-			const length = wide ? (this._d[this._i + 1] << 8) + this._d[this._i + 2] : this._d[this._i + 1];
+			const length = wide ? this._v.getUint16(this._i + 1) : this._d[this._i + 1] | 0;
 			this._i += wide ? 3 : 2;
 			if (length === 0) {
 				return "";
 			}
 			if (length === 1) {
 				const byte = this._d[this._i++];
-				return keyType >= 118 && byte >= 128 ? "�" : String.fromCharCode(byte);
+				return keyType >= 118 && byte >= 128 ? "\ufffd" : String.fromCharCode(byte);
 			}
 			if (this._cacheKeys && length < 30) {
 				return this._lookup(length, keyType >= 118 ? this._keyTableUtf : this._keyTableLatin);
@@ -485,6 +507,9 @@ export class Unpacker {
 		const atom = table === this._atomTableLatin || table === this._atomTableUtf;
 		const text = utf ? this._utf(length) : this._latin(length);
 		const value = atom && Object.prototype.hasOwnProperty.call(this._atoms, text) ? this._atoms[text] : text;
+		if (this._i > this._end) {
+			throw new RangeError("Truncated ETF payload");
+		}
 		let node = table[length] ??= new Map();
 		const end = this._i;
 		let i = s;
@@ -520,7 +545,7 @@ export class Unpacker {
 					continue;
 				}
 				if (pointType === 107) {
-					const size = (this._d[this._i + 1] << 8) + this._d[this._i + 2];
+					const size = this._v.getUint16(this._i + 1);
 					this._i += 3;
 					return string + this._latin(size);
 				}
@@ -528,7 +553,8 @@ export class Unpacker {
 			if (pointType !== 97 && pointType !== 98 && pointType !== 110 && pointType !== 111) {
 				throw new TypeError("Character list elements must be integers");
 			}
-			const point = Number(this._loop());
+			const value = this._loop();
+			const point = Number(value);
 			if (!Number.isInteger(point) || point < 0 || point > 1114111 || point >= 55296 && point <= 57343) {
 				throw new RangeError("Character list element is not a Unicode scalar value");
 			}
@@ -595,12 +621,12 @@ export class Unpacker {
 					i++;
 				}
 				if (byte1 < 194 || byte1 > 244) {
-					str += "�";
+					str += "\ufffd";
 					continue;
 				}
 				const second = i < l ? data[i] : 0;
 				if ((second & 192) !== 128 || byte1 === 224 && second < 160 || byte1 === 237 && second > 159 || byte1 === 240 && second < 144 || byte1 === 244 && second > 143) {
-					str += "�";
+					str += "\ufffd";
 					continue;
 				}
 				i++;
@@ -608,7 +634,7 @@ export class Unpacker {
 				if (byte1 >= 224) {
 					const third = i < l ? data[i] : 0;
 					if ((third & 192) !== 128) {
-						str += "�";
+						str += "\ufffd";
 						continue;
 					}
 					i++;
@@ -616,7 +642,7 @@ export class Unpacker {
 					if (byte1 >= 240) {
 						const fourth = i < l ? data[i] : 0;
 						if ((fourth & 192) !== 128) {
-							str += "�";
+							str += "\ufffd";
 							continue;
 						}
 						i++;

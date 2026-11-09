@@ -38,6 +38,7 @@ declare class Unpacker {
     private _sb;
     private _b;
     private _i;
+    private _end;
     private _T;
     private _TL;
     private _u;
