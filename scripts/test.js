@@ -51,6 +51,67 @@ test("scalar values match independent ETF fixtures", () => {
 	assert.throws(() => unpacker.unpack(frame([255])), Error);
 });
 
+test("unsupported Erlang values become null and unsupported map keys omit only their pair", () => {
+	const node = textTerm(119, [110]);
+	const pid = [103, ...node, ...Array(9).fill(0)];
+	const captures = [
+		[70, ...Array(8).fill(0)], [97, 7], [98, ...u32(256)],
+		[99, ...Buffer.from("1.5".padEnd(31, "\0"))], [106],
+		...[100, 107, 118, 115, 119, 109, 77].map(type => textTerm(type, [65])),
+		[110, 1, 0, 7], [111, ...u32(1), 0, 7],
+		[104, 1, 97, 7], [105, ...u32(1), 97, 7],
+		[108, ...u32(1), 97, 7, 106],
+		[116, ...u32(1), ...node, 97, 7]
+	];
+	const fun = [0, ...Array(16).fill(0), ...u32(0), ...u32(captures.length),
+		...node, 97, 0, 97, 0, ...pid, ...captures.flat()];
+	const terms = [
+		...[101, 102, 103, 88, 89, 120].map(type =>
+			[type, ...node, ...Array(type === 101 || type === 102 ? 5 : type === 103 ? 9 : type === 89 ? 8 : 12).fill(0)]),
+		...[114, 90].map(type => [type, 0, 2, ...node, ...Array((type === 90 ? 4 : 1) + 8).fill(0)]),
+		[113, ...node, ...node, 97, 0],
+		[117, ...u32(1), ...pid, ...node, 97, 0, 97, 0, 104, 1, 97, 7],
+		[112, ...u32(fun.length + 4), ...fun],
+		[67, ...u32(1), 0, ...node, ...node, ...node, 97, 7]
+	];
+	const unpacker = new Unpacker();
+	for(const term of terms) {
+		const packet = frame(term);
+		assert.equal(unpacker.unpack(packet), null);
+		assert.deepEqual(unpacker.unpack(frame([104, 3, 97, 7, ...term, 97, 9])), [7, null, 9]);
+		assert.deepEqual(unpacker.unpack(frame([108, ...u32(1), ...term, 106])), [null]);
+		const map = [116, ...u32(3), ...term, ...captures[captures.length - 1],
+			...textTerm(119, [120]), ...term, ...textTerm(119, [121]), 97, 9];
+		assert.deepEqual(unpacker.unpack(frame([104, 2, ...map, 97, 65])), [{ x: null, y: 9 }, 65]);
+		for(let size = 0; size < packet.length; size++) {
+			unpacker.unpack(packet);
+			assert.throws(() => unpacker.unpack(packet.subarray(0, size)),
+				`tag ${term[0]}, prefix ${size}`);
+		}
+	}
+	assert.deepEqual(roundtrip({ a: null, b: undefined, null: 7, undefined: 9 }),
+		{ a: null, b: undefined, null: 7, undefined: 9 });
+});
+
+test("unsupported-term skipping rejects unknown tags but tolerates inconsistent function sizes", () => {
+	const node = textTerm(119, [110]);
+	for(const tag of [68, 69, 82, 121, 255]) {
+		for(const term of [
+			[tag, 0],
+			[104, 1, tag, 0],
+			[103, tag, 0, ...Array(9).fill(0)],
+			[116, ...u32(1), 103, ...node, ...Array(9).fill(0), tag, 0]
+		]) {
+			assert.throws(() => new Unpacker().unpack(frame(term)), /Unexpected byte:/);
+		}
+	}
+	const fun = [0, ...Array(16).fill(0), ...u32(0), ...u32(0), ...node, 97, 0, 97, 0,
+		103, ...node, ...Array(9).fill(0)];
+	for(const size of [0, 28, fun.length + 3, fun.length + 5, 4294967295]) {
+		assert.deepEqual(new Unpacker().unpack(frame([104, 2, 112, ...u32(size), ...fun, 97, 9])), [null, 9]);
+	}
+});
+
 test("truncated terms cannot read previous packets or cached payloads", () => {
 	const terms = [
 		[97, 7], [98, 0, 0, 1, 0], [70, 63, 248, 0, 0, 0, 0, 0, 0],

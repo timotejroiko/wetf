@@ -193,9 +193,9 @@ Objects are encoded using their own enumerable properties. Replacement functions
 
 Values encoded as `STRING_EXT` are limited to 65,535 bytes according to the [ETF specification](https://www.erlang.org/doc/apps/erts/erl_ext_dist.html#string_ext) and the Packer will throw a RangeError if exceeded. For longer strings, use `BINARY_EXT` or `LIST_EXT`.
 
-The Packer does not validate strings for lossless encoding. Latin-1 encoding truncates UTF-16 code units above 255 to their low byte; UTF-8 encoding invalid sequences with `U+FFFD`.
+The Packer does not perform extensive string validation, Latin-1 encoding truncates unsupported code units to their low byte and UTF-8 encodes invalid sequences with `U+FFFD`.
 
-Values encoded as `ATOM`s follow the wire format limit of 65,535 bytes, not Erlang's hard limit of 255 characters per atom. The Packer allows these atoms to be encoded, but atoms larger than 255 characters may fail to decode in a real Erlang application.
+Values encoded as `ATOM` follow the wire format limit of 65,535 bytes, not Erlang's hard limit of 255 characters per atom. The Packer allows these atoms to be encoded, but atoms larger than 255 characters may fail to decode in a real Erlang application.
 
 Ignored values have their object properties omitted and array elements removed from the serialized output. Use `null` encoding if preserving indexes or keys is required. If the top-level value is ignored, `pack()` encodes `NIL_EXT` (the empty list).
 
@@ -232,7 +232,7 @@ All options are optional.
 |---|---|---|---|
 | decompression | [Decompression Method](#decompression-method) | - | Specify the decompression method |
 | decoding | [Decoding Options](#decoding-options) | {} | Customize decoding behavior |
-| browserStrictLatin1 | boolean | true | Enforce decoding the full Latin-1 character set (bytes 0-255) in browsers. Disabling this improves performance for large strings in browsers but only guarantees correct decoding within the ASCII range (bytes `0-127`). |
+| browserStrictLatin1 | boolean | true | Enforce decoding the full Latin-1 character set (bytes 0-255) in browsers. Disabling this improves performance for large strings but only guarantees correct decoding within the ASCII range (bytes `0-127`). |
 | atomTable | object | [Default Atom Table](#default-atom-table) | Defines substitutions for atom values, unmapped atoms are decoded as strings. Does not affect object keys |
 | cacheKeys | boolean | false | Cache object keys for faster decoding of repeated keys (string, binary and atom keys only) |
 | cacheAtoms | boolean | false | Cache atom values for faster decoding of repeated atoms (both atomTable and unmapped atoms) |
@@ -291,7 +291,7 @@ The Unpacker currently cannot unpack the following ETF types:
 
 `Distribution Header`, `ATOM_CACHE_REF`, `PORT_EXT`, `NEW_PORT_EXT`, `V4_PORT_EXT`, `PID_EXT`, `NEW_PID_EXT`, `REFERENCE_EXT`, `NEW_REFERENCE_EXT`, `NEWER_REFERENCE_EXT`, `FUN_EXT`, `NEW_FUN_EXT`, `EXPORT_EXT`, `RECORD_EXT`
 
-Support for these types might be added in the future, feel free to open a feature request or issue.
+The Unpacker will attempt to skip decoding these values if possible and continue normally.
 
 ## Benchmark
 

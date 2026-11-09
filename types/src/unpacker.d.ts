@@ -50,6 +50,7 @@ declare class Unpacker {
     private _keyTableUtf;
     unpack(data: Uint8Array): any;
     private _loop;
+    private _skip;
     private _key;
     private _lookup;
     private _charList;

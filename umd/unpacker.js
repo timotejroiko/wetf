@@ -402,6 +402,10 @@
 					this._i += 4;
 					for (let i = 0; i < length; i++) {
 						const key = this._key();
+						if (typeof key === "undefined") {
+							this._skip(this._d[this._i++]);
+							continue;
+						}
 						const value = this._loop();
 						if (key === "__proto__") {
 							Object.defineProperty(obj, key, {
@@ -417,7 +421,122 @@
 					return obj;
 				}
 			}
-			throw new Error(`Unexpected byte: ${type}`);
+			return this._skip(type);
+		}
+		_skip(type) {
+			let length = 0;
+			let count = 0;
+			switch (type) {
+			case 70:
+				length = 8;
+				break;
+
+			case 97:
+				length = 1;
+				break;
+
+			case 98:
+				length = 4;
+				break;
+
+			case 99:
+				length = 31;
+				break;
+
+			case 106:
+				break;
+
+			case 100:
+			case 107:
+			case 118:
+				length = this._v.getUint16(this._i);
+				this._i += 2;
+				break;
+
+			case 115:
+			case 119:
+				length = this._d[this._i++] | 0;
+				break;
+
+			case 109:
+			case 77:
+				length = this._v.getUint32(this._i);
+				this._i += type === 77 ? 5 : 4;
+				break;
+
+			case 110:
+				length = (this._d[this._i] | 0) + 1;
+				this._i++;
+				break;
+
+			case 111:
+				length = this._v.getUint32(this._i) + 1;
+				this._i += 4;
+				break;
+
+			case 104:
+				count = this._d[this._i++] | 0;
+				break;
+
+			case 105:
+			case 108:
+			case 116:
+				count = this._v.getUint32(this._i);
+				this._i += 4;
+				if (type === 108) {
+					count++;
+				} else if (type === 116) {
+					count *= 2;
+				}
+				break;
+
+			case 101:
+			case 102:
+			case 103:
+			case 88:
+			case 89:
+			case 120:
+				this._skip(this._d[this._i++]);
+				length = type === 101 || type === 102 ? 5 : type === 103 ? 9 : type === 89 ? 8 : 12;
+				break;
+
+			case 114:
+			case 90:
+				length = this._v.getUint16(this._i) * 4 + (type === 90 ? 4 : 1);
+				this._i += 2;
+				this._skip(this._d[this._i++]);
+				break;
+
+			case 113:
+				count = 3;
+				break;
+
+			case 117:
+				count = this._v.getUint32(this._i) + 4;
+				this._i += 4;
+				break;
+
+			case 112:
+				count = this._v.getUint32(this._i + 25) + 4;
+				this._i += 29;
+				break;
+
+			case 67:
+				count = this._v.getUint32(this._i) * 2 + 2;
+				this._i += 5;
+				break;
+
+			default:
+				throw new Error(`Unexpected byte: ${type}`);
+			}
+			this._i += length;
+			if (this._i + count > this._end) {
+				throw new RangeError("Truncated ETF payload");
+			}
+			for (let i = 0; i < count; i++) {
+				this._skip(this._d[this._i++]);
+			}
+			return null;
 		}
 		_key() {
 			const keyType = this._d[this._i];
@@ -461,8 +580,12 @@
 				this._i += 5;
 				return this._charList(keyLength);
 			}
-			const key = this._loop();
-			return typeof key === "string" || typeof key === "symbol" ? key : String(key);
+			if (keyType === 70 || keyType === 97 || keyType === 98 || keyType === 99 || keyType === 104 || keyType === 105 || keyType === 106 || keyType === 77 || keyType === 110 || keyType === 111 || keyType === 116) {
+				const key = this._loop();
+				return typeof key === "string" || typeof key === "symbol" ? key : String(key);
+			}
+			this._i++;
+			this._skip(keyType);
 		}
 		_lookup(length, table) {
 			const d = this._d;
