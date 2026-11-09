@@ -12,7 +12,7 @@ export class Packer {
 		this._nanEncoding = [ "atom", "null", "ignore" ].indexOf(options.encoding?.nan?.toLowerCase() ?? "") + 1 || 1;
 		this._arrayEncoding = [ "list", "improperlist", "tuple" ].indexOf(options.encoding?.array?.toLowerCase() ?? "") + 1 || 3;
 		this._useLegacyAtoms = Boolean(options.useLegacyAtoms);
-		this._keyCache = options.cacheKeys ? new Map() : null;
+		this._keyCache = options.cacheKeys ?? true ? new Map() : null;
 		this._poolSize = Number(options.poolSize) || 1024 * 1024;
 		this._u = new Uint8Array(this._poolSize);
 		this._v = new DataView(this._u.buffer);

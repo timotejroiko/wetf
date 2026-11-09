@@ -18,7 +18,7 @@
 			this._nanEncoding = [ "atom", "null", "ignore" ].indexOf(options.encoding?.nan?.toLowerCase() ?? "") + 1 || 1;
 			this._arrayEncoding = [ "list", "improperlist", "tuple" ].indexOf(options.encoding?.array?.toLowerCase() ?? "") + 1 || 3;
 			this._useLegacyAtoms = Boolean(options.useLegacyAtoms);
-			this._keyCache = options.cacheKeys ? new Map() : null;
+			this._keyCache = options.cacheKeys ?? true ? new Map() : null;
 			this._poolSize = Number(options.poolSize) || 1024 * 1024;
 			this._u = new Uint8Array(this._poolSize);
 			this._v = new DataView(this._u.buffer);
@@ -745,8 +745,8 @@
 	class Unpacker {
 		constructor(options = {}) {
 			this._decompressor = options.decompression;
-			this._cacheKeys = Boolean(options.cacheKeys);
-			this._cacheAtoms = Boolean(options.cacheAtoms);
+			this._cacheKeys = Boolean(options.cacheKeys ?? true);
+			this._cacheAtoms = Boolean(options.cacheAtoms ?? true);
 			this._nilDecoding = [ "null", "array" ].indexOf(options.decoding?.nil?.toLowerCase() ?? "") + 1 || 2;
 			this._stringDecoding = [ "utf8", "latin1", "buffer", "uint8array", "array" ].indexOf(options.decoding?.string?.toLowerCase() ?? "") + 1 || 2;
 			this._stringKeyDecoding = [ "utf8", "latin1" ].indexOf(options.decoding?.stringKey?.toLowerCase() ?? "") + 1 || 2;

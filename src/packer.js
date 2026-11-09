@@ -34,7 +34,7 @@ class Packer {
 		/** @private */ this._nanEncoding = ["atom", "null", "ignore"].indexOf(options.encoding?.nan?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._arrayEncoding = ["list", "improperlist", "tuple"].indexOf(options.encoding?.array?.toLowerCase() ?? "") + 1 || 3;
 		/** @private */ this._useLegacyAtoms = Boolean(options.useLegacyAtoms);
-		/** @private @type {Map<string, Uint8Array> | null} */ this._keyCache = options.cacheKeys ? new Map() : null;
+		/** @private @type {Map<string, Uint8Array> | null} */ this._keyCache = (options.cacheKeys ?? true) ? new Map() : null;
 		/** @private */ this._poolSize = Number(options.poolSize) || 1024 * 1024;
 		/** @private */ this._u = new Uint8Array(this._poolSize);
 		/** @private */ this._v = new DataView(this._u.buffer);

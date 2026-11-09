@@ -1,8 +1,8 @@
 export class Unpacker {
 	constructor(options = {}) {
 		this._decompressor = options.decompression;
-		this._cacheKeys = Boolean(options.cacheKeys);
-		this._cacheAtoms = Boolean(options.cacheAtoms);
+		this._cacheKeys = Boolean(options.cacheKeys ?? true);
+		this._cacheAtoms = Boolean(options.cacheAtoms ?? true);
 		this._nilDecoding = [ "null", "array" ].indexOf(options.decoding?.nil?.toLowerCase() ?? "") + 1 || 2;
 		this._stringDecoding = [ "utf8", "latin1", "buffer", "uint8array", "array" ].indexOf(options.decoding?.string?.toLowerCase() ?? "") + 1 || 2;
 		this._stringKeyDecoding = [ "utf8", "latin1" ].indexOf(options.decoding?.stringKey?.toLowerCase() ?? "") + 1 || 2;

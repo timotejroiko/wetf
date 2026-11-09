@@ -22,8 +22,8 @@ class Unpacker {
 	 */
 	constructor(options = {}) {
 		/** @private */ this._decompressor = options.decompression;
-		/** @private */ this._cacheKeys = Boolean(options.cacheKeys);
-		/** @private */ this._cacheAtoms = Boolean(options.cacheAtoms);
+		/** @private */ this._cacheKeys = Boolean(options.cacheKeys ?? true);
+		/** @private */ this._cacheAtoms = Boolean(options.cacheAtoms ?? true);
 		/** @private */ this._nilDecoding = ["null", "array"].indexOf(options.decoding?.nil?.toLowerCase() ?? "") + 1 || 2;
 		/** @private */ this._stringDecoding = ["utf8", "latin1", "buffer", "uint8array", "array"].indexOf(options.decoding?.string?.toLowerCase() ?? "") + 1 || 2;
 		/** @private */ this._stringKeyDecoding = ["utf8", "latin1"].indexOf(options.decoding?.stringKey?.toLowerCase() ?? "") + 1 || 2;

@@ -138,7 +138,7 @@ All options are optional.
 |---|---|---|---|
 | poolSize | number | 1048576 | Initial size of the internal memory buffer in bytes |
 | useLegacyAtoms | boolean | false | If enabled, Atoms will be encoded using the legacy `ATOM_EXT` formats instead of the newer `ATOM_UTF8_EXT`. Legacy atoms are slightly faster but are limited to the latin1 character set |
-| cacheKeys | boolean | false | Cache object keys for faster encoding of repeated keys |
+| cacheKeys | boolean | true | Cache object keys for faster encoding of repeated keys |
 | compression | [Compression Method](#compression-method) | false | Enable data compression and specify the compression method |
 | encoding | [Encoding Options](#encoding-options) | {} | Customize encoding behavior |
 
@@ -234,8 +234,8 @@ All options are optional.
 | decoding | [Decoding Options](#decoding-options) | {} | Customize decoding behavior |
 | browserStrictLatin1 | boolean | true | Enforce decoding the full Latin-1 character set (bytes 0-255) in browsers. Disabling this improves performance for large strings but only guarantees correct decoding within the ASCII range (bytes `0-127`). |
 | atomTable | object | [Default Atom Table](#default-atom-table) | Defines substitutions for atom values, unmapped atoms are decoded as strings. Does not affect object keys |
-| cacheKeys | boolean | false | Cache object keys for faster decoding of repeated keys (string, binary and atom keys only) |
-| cacheAtoms | boolean | false | Cache atom values for faster decoding of repeated atoms (both atomTable and unmapped atoms) |
+| cacheKeys | boolean | true | Cache object keys for faster decoding of repeated keys (string, binary and atom keys only) |
+| cacheAtoms | boolean | true | Cache atom values for faster decoding of repeated atoms (both atomTable and unmapped atoms) |
 
 ### Decompression Method
 
