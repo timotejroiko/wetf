@@ -6,8 +6,8 @@ class Packer {
 	 *      cacheKeys?: boolean;
 	 *      compression?: boolean | "zlib" | "compressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>);
 	 *      encoding?: {
-	 *          string?: "binary" | "string" | "char-string" | "char-list";
-	 *          key?: "binary" | "string" | "char-string" | "atom";
+	 *          string?: "binary" | "utf8-string" | "char-string" | "char-list";
+	 *          key?: "binary" | "utf8-string" | "char-string" | "atom";
 	 *          safeInt?: "bigint" | "float";
 	 *          safeBigInt?: "number" | "bigint";
 	 *          null?: "atom" | "nil";
@@ -23,8 +23,8 @@ class Packer {
 	 */
 	constructor(options = {}) {
 		/** @private */ this._compressor = options.compression ?? false;
-		/** @private */ this._stringEncoding = ["string", "binary", "char-string", "char-list"].indexOf(options.encoding?.string?.toLowerCase() ?? "") + 1 || 2;
-		/** @private */ this._keyEncoding = ["atom", "binary", "string", "char-string"].indexOf(options.encoding?.key?.toLowerCase() ?? "") + 1 || 2;
+		/** @private */ this._stringEncoding = ["utf8-string", "binary", "char-string", "char-list"].indexOf(options.encoding?.string?.toLowerCase() ?? "") + 1 || 2;
+		/** @private */ this._keyEncoding = ["atom", "binary", "utf8-string", "char-string"].indexOf(options.encoding?.key?.toLowerCase() ?? "") + 1 || 2;
 		/** @private */ this._safeIntEncoding = ["bigint", "float"].indexOf(options.encoding?.safeInt?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._safeBigIntEncoding = ["number", "bigint"].indexOf(options.encoding?.safeBigInt?.toLowerCase() ?? "") + 1 || 1;
 		/** @private */ this._nullEncoding = ["atom", "nil"].indexOf(options.encoding?.null?.toLowerCase() ?? "") + 1 || 1;

@@ -160,8 +160,8 @@ This object controls the encoding behavior and determines which JavaScript data 
 
 | option | values | default | description |
 |---|---|---|---|
-| string | "binary", "string", "char-string", "char-list" | "binary" | Encode strings as UTF-8 `BINARY_EXT`, UTF-8 `STRING_EXT`, Latin-1 `STRING_EXT` or a proper `LIST_EXT` of Unicode characters |
-| key | "binary", "string", "char-string", "atom" | "binary" | Encode object keys as UTF-8 `BINARY_EXT`, UTF-8 `STRING_EXT`, Latin-1 `STRING_EXT` or `ATOM_*_EXT`. Select `"atom"` explicitly for Erlang protocols expecting atom keys |
+| string | "binary", "utf8-string", "char-string", "char-list" | "binary" | Encode strings as UTF-8 `BINARY_EXT`, UTF-8 `STRING_EXT`, Latin-1 `STRING_EXT` or a proper `LIST_EXT` of Unicode characters |
+| key | "binary", "utf8-string", "char-string", "atom" | "binary" | Encode object keys as UTF-8 `BINARY_EXT`, UTF-8 `STRING_EXT`, Latin-1 `STRING_EXT` or `ATOM_*_EXT`. Select `"atom"` explicitly for Erlang protocols expecting atom keys |
 | safeInt | "bigint", "float" | "bigint" | Whether integers between 32 and 53 bits should be encoded as `SMALL_BIG_EXT` or `NEW_FLOAT_EXT` |
 | safeBigInt | "number", "bigint" | "number" | Whether BigInts smaller than 32 bits should be encoded as `*_INTEGER_EXT` or `SMALL_BIG_EXT` |
 | null | "atom", "nil" | "atom" | Whether null should be encoded as the Atom `nil` or as `NIL_EXT` |

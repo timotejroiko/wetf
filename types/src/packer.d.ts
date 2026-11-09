@@ -5,8 +5,8 @@ declare class Packer {
         cacheKeys?: boolean;
         compression?: boolean | "zlib" | "compressionstream" | ((data: Uint8Array) => Uint8Array | Promise<Uint8Array>);
         encoding?: {
-            string?: "binary" | "string" | "char-string" | "char-list";
-            key?: "binary" | "string" | "char-string" | "atom";
+            string?: "binary" | "utf8-string" | "char-string" | "char-list";
+            key?: "binary" | "utf8-string" | "char-string" | "atom";
             safeInt?: "bigint" | "float";
             safeBigInt?: "number" | "bigint";
             null?: "atom" | "nil";
